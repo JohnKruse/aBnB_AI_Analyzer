@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.so
+
+# Directories
+searches/*
+!searches/README.md
+git_ignore/
+logs/
+
+# Environment and secrets
+.env
+.env.*
+!.env.template
+.venv
+env/
+venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Logging
+logs/
+*.log
+
+# Data files
+*.csv
+*.json
+*.xlsx
+*.xls
+!requirements/*.csv
+
+# Local configs
+config_backup.yaml
+local_settings.yaml
+
+# Backups
+*.zip
+*.bak
