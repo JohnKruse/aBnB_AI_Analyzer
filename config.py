@@ -56,34 +56,55 @@ def load_config():
     Load configuration from YAML file and environment variables.
     
     The configuration combines:
-    1. YAML file settings from the search subdirectory
-    2. Environment variables for API keys and search directory
-    3. Computed paths and directories
+    1. Base configuration from config.yaml
+    2. Search-specific configuration from the search subdirectory
+    3. Environment variables for API keys
+    4. Computed paths and directories
     
     Returns:
         dict: Complete configuration dictionary
         
     Raises:
         ValueError: If SEARCH_SUBDIR environment variable is not set
-        FileNotFoundError: If config file is not found
+        FileNotFoundError: If config files not found
         EnvironmentError: If required API keys are not set
     """
-    search_subdir = os.getenv('SEARCH_SUBDIR')
-    if not search_subdir:
-        raise ValueError("SEARCH_SUBDIR environment variable is not set.")
-
+    # Load base configuration
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    config_path = os.path.join(base_dir, 'searches', search_subdir, 'config.yaml')
-
-    if not os.path.exists(config_path):
-        raise FileNotFoundError(f"Config file not found at {config_path}")
-
-    with open(config_path, 'r') as config_file:
+    base_config_path = os.path.join(base_dir, 'config.yaml')
+    
+    if not os.path.exists(base_config_path):
+        raise FileNotFoundError(f"Base config file not found at {base_config_path}")
+        
+    with open(base_config_path, 'r') as config_file:
         config = yaml.safe_load(config_file)
+
+    # Format AI prompts with focus areas
+    if 'ai' in config and 'review_summary' in config['ai']:
+        focus_values = {
+            f'default_focus_{i}': config[f'default_focus_{i}']
+            for i in range(1, 6)
+        }
+        
+        # Format each question with the focus values
+        questions = config['ai']['review_summary']['questions']
+        config['ai']['review_summary']['questions'] = [
+            q.format(**focus_values) for q in questions
+        ]
+
+    # Load search-specific configuration if SEARCH_SUBDIR is set
+    search_subdir = os.getenv('SEARCH_SUBDIR')
+    if search_subdir:
+        search_config_path = os.path.join(base_dir, 'searches', search_subdir, 'config.yaml')
+        if os.path.exists(search_config_path):
+            with open(search_config_path, 'r') as config_file:
+                search_config = yaml.safe_load(config_file)
+                # Update base config with search-specific settings
+                config.update(search_config)
 
     # Add base_dir and search_subdir to the config
     config['base_dir'] = base_dir
-    config['search_subdir'] = search_subdir
+    config['search_subdir'] = search_subdir if search_subdir else ''
     
     # Add API keys to config
     config['openai_api_key'] = get_openai_api_key()

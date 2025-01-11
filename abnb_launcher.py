@@ -24,6 +24,11 @@ logger.info("="*80 + "\n")
 # Define project root directory
 PROJECT_ROOT = Path(__file__).parent.absolute()
 
+# Load base configuration
+base_config_path = PROJECT_ROOT / "config.yaml"
+with open(base_config_path, 'r') as f:
+    base_config = yaml.safe_load(f)
+
 class AbnbLauncher:
     def __init__(self):
         logger.info("Initializing AbnbLauncher")
@@ -94,49 +99,9 @@ class AbnbLauncher:
             'map_overlay_file_1': '',
             'map_overlay_file_2': '',
             
-            'ai_review_summary': {
-                'questions': [
-                    'Summarize the following AbnB reviews into concise bullet points focusing on these areas: '
-                    '1. Transportation 2. Bathroom and hot water 3. Sleeping arrangements '
-                    '4. Cleanliness 5. Unexpected Points'
-                ],
-                'role_prompt': "You are a review summarizer specializing in extracting concise, focused summaries "
-                              "from AbnB reviews. Your task is to summarize guest reviews by categorizing feedback "
-                              "into specific areas, providing 1 or 2 bullet points for each category. Each bullet "
-                              "point should be succinct and convey only essential information.",
-                'model_name': "gpt-4o-mini",
-                'max_tokens': 500,
-                'temperature': 0.1
-            },
-            
-            'ai_rating': {
-                'questions': [
-                    'Provide a numerical rating between 1 and 5 based on the text you are given.'
-                ],
-                'role_prompt': "You are an expert rating analyst. Your task is to provide a numerical rating between "
-                              "1 and 5 based on the text you are given. Please provide a rating based on the following "
-                              "criteria: 1. Transportation 2. Bathroom and hot water 3. Sleeping arrangements "
-                              "4. Cleanliness 5. Unexpected Points. A lack of specific mentions should lower the rating.",
-                'model_name': "gpt-4o-mini",
-                'max_tokens': 500,
-                'temperature': 0.1,
-                'function_schema': {
-                    'name': 'rate_string',
-                    'description': "Evaluate a given string and return a rating between 1 and 5.",
-                    'parameters': {
-                        'type': 'object',
-                        'properties': {
-                            'AI_rating': {
-                                'type': 'number',
-                                'minimum': 1.0,
-                                'maximum': 5.0,
-                                'description': "Overall rating."
-                            }
-                        },
-                        'required': ['AI_rating']
-                    }
-                }
-            }
+            # Load AI configuration from base config
+            'ai_review_summary': base_config['ai']['review_summary'],
+            'ai_rating': base_config['ai']['rating_analysis']
         }
         
         config_file = search_dir / "config.yaml"

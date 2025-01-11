@@ -1,0 +1,70 @@
+# Default configuration for BnB AI Analyzer
+# This file serves as the base configuration for new searches
+
+# Default currency and price settings
+default_currency: EUR
+default_min_price: 0
+default_max_price: 5000
+default_occupants: 1
+
+# Default user rating range
+default_min_user_rating: 0
+default_max_user_rating: 6
+
+# Default AI rating range
+default_min_ai_rating: 0
+default_max_ai_rating: 5
+
+# Default Search Foci
+default_focus_1: 'cleanliness'
+default_focus_2: 'parking and transportation'
+default_focus_3: 'bathroom'
+default_focus_4: 'sleeping'
+default_focus_5: 'unexpected points'
+
+# AI Configuration
+ai:
+  # Default model settings
+  default_model: gpt-4o-mini
+  default_max_tokens: 500
+  default_temperature: 0.1
+
+  # Review summarization configuration
+  review_summary:
+    questions:
+      - 'Summarize the reviews focusing on: 1. {default_focus_1} 2. {default_focus_2} 3. {default_focus_3} 4. {default_focus_4} 5. {default_focus_5}'
+    role_prompt: >-
+      You are a review summarizer specializing in extracting concise, focused summaries 
+      from AbnB reviews. Your task is to summarize guest reviews by categorizing feedback 
+      into specific areas, providing 1 or 2 bullet points for each category. Each bullet 
+      point should be succinct and convey only essential information.
+
+  # Rating analysis configuration
+  rating_analysis:
+    questions:
+      - 'Provide a numerical rating between 1 and 5 based on the text you are given.'
+    role_prompt: >-
+      You are an expert rating analyst. Your task is to provide a numerical rating between 
+      1 and 5 based on the review text. Consider all aspects mentioned in the review, 
+      particularly focusing on location, cleanliness, and overall guest satisfaction.
+
+# Default highlight keywords for property analysis
+default_highlight_keywords:
+  - private
+  - shared
+  - sharing
+  - attached
+  - separate
+  - en suite
+  - bathroom
+  - underground
+  - metro
+  - train
+  - tube
+  - bus
+  - stop
+  - wifi
+  - wi-fi
+  - hot water
+  - washer
+  - laundry
