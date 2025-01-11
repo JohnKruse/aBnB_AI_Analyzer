@@ -16,9 +16,41 @@ Key capabilities:
 
 Whether you're a traveler seeking the perfect stay or a host looking to optimize your listing, BnB AI Analyzer turns overwhelming rental data into clear, actionable intelligence.
 
+## Installation
+
+You can set up the project environment using either pip or conda:
+
+### Using pip
+
+```bash
+pip install -r requirements.txt
+```
+
+### Using conda
+
+```bash
+conda env create -f environment.yml
+conda activate airbnb
+```
+
+## Usage
+
+To start the application, run:
+
+```bash
+python abnb_launcher.py
+```
+
+This will start the Airbnb analyzer where you can:
+- Set up new searches using Airbnb URLs
+- Monitor existing searches
+- Analyze property reviews and data
+- View location-based insights
+
 ## Project Structure
 
-- `abnb_launcher.py`: Main script for launching the analysis process
+- `abnb_launcher.py`: Main entry point and core functionality for the analyzer
+- `abnb_launcher_ui.py`: Optional graphical user interface
 - `abnb_monitor.py`: Monitoring functionality for rental listings
 - `review_app.py`: Application for reviewing and analyzing listing data
 - `overlays/`: Directory containing map overlay CSV files
