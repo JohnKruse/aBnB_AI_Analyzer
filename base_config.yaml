@@ -1,4 +1,0 @@
-# Base configuration for BnB AI Analyzer
-# This file contains default settings that can be overridden by search-specific configs
-
-# No need for base_dir as it's now determined automatically from the project root
