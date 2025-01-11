@@ -245,20 +245,19 @@ class AbnbLauncher:
             subprocess.run([sys.executable, PROJECT_ROOT / "abnb_monitor.py"], check=True)
             logger.info("abnb_monitor.py completed successfully")
             print("abnb_monitor.py completed successfully.")
-        except subprocess.CalledProcessError:
-            logger.error("abnb_monitor.py failed to complete successfully")
-            print("Error: abnb_monitor.py failed to complete successfully.")
+        except subprocess.CalledProcessError as e:
+            logger.error(f"abnb_monitor.py failed to complete successfully with error: {e}")
+            print(f"Error: abnb_monitor.py failed to complete successfully with error: {e}")
             return
-
         # Run review_app.py
         logger.info("Running review_app.py")
         try:
             subprocess.run(["streamlit", "run", str(PROJECT_ROOT / "review_app.py")], check=True)
             logger.info("review_app.py completed successfully")
             print("review_app.py completed successfully.")
-        except subprocess.CalledProcessError:
-            logger.error("review_app.py failed to complete successfully")
-            print("Error: review_app.py failed to complete successfully.")
+        except subprocess.CalledProcessError as e:
+            logger.error(f"review_app.py failed to complete successfully with error: {e}")
+            print(f"Error: review_app.py failed to complete successfully with error: {e}")
             return
 
 def main():

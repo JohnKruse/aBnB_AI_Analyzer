@@ -66,7 +66,8 @@ def process_room_details(df_results_filtered, currency, check_in, check_out, det
                 new_details_data.append(data)
                 break  # Success, exit retry loop
             except Exception as e:
-                logger.error(f"Error processing room {room_id} (Attempt {attempt + 1}/{max_retries}): {str(e)}")
+                import traceback
+                logger.error(f"Error processing room {room_id} (Attempt {attempt + 1}/{max_retries}): {str(e)}\n{traceback.format_exc()}")
                 if attempt < max_retries - 1:
                     logger.info(f"Retrying in {retry_delay} seconds...")
                     time.sleep(retry_delay)
@@ -133,7 +134,8 @@ def fetch_and_filter_properties(check_in, check_out, ne_lat, ne_long, sw_lat, sw
             return filtered_df
 
         except Exception as e:
-            logger.error(f"Error fetching Airbnb listings (Attempt {attempt + 1}/{max_retries}): {str(e)}")
+            import traceback
+            logger.error(f"Error fetching Airbnb listings (Attempt {attempt + 1}/{max_retries}): {str(e)}\n{traceback.format_exc()}")
             if attempt < max_retries - 1:
                 logger.info(f"Retrying in {retry_delay} seconds...")
                 time.sleep(retry_delay)
@@ -194,7 +196,8 @@ def get_airbnb_reviews(room_id: str, offset: int = 0, limit: int = 50) -> dict:
         logger.error(f"RequestException for room {room_id}: {str(e)}")
         return {'room_id': room_id, 'reviews': [], 'reviews_text': ''}
     except Exception as e:
-        logger.error(f"Unexpected error for room {room_id}: {str(e)}")
+        import traceback
+        logger.error(f"Unexpected error for room {room_id}: {str(e)}\n{traceback.format_exc()}")
         return {'room_id': room_id, 'reviews': [], 'reviews_text': ''}
 
 def download_reviews_for_room(room_id: str) -> list:
@@ -223,7 +226,8 @@ def download_reviews_for_room(room_id: str) -> list:
             if len(reviews['reviews']) < limit:
                 break
         except Exception as e:
-            logger.error(f"Error downloading reviews for room {room_id} (Attempt {attempt + 1}/{max_retries}): {str(e)}")
+            import traceback
+            logger.error(f"Error downloading reviews for room {room_id} (Attempt {attempt + 1}/{max_retries}): {str(e)}\n{traceback.format_exc()}")
             if attempt < max_retries - 1:
                 logger.info(f"Retrying in {retry_delay} seconds...")
                 time.sleep(retry_delay)
@@ -458,6 +462,7 @@ def main():
 
         if results_df.empty:
             logger.error("Error: No search results found. Please check your search parameters.")
+            print("Error: No search results found. Please check your search parameters.")
             return
 
         logger.info("Columns in results_df after downloading:", results_df.columns)

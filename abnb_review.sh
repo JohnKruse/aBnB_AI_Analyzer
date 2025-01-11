@@ -1,5 +1,6 @@
 # Get the directory of the script and use it as the base directory
 BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export BASE_DIR
 echo "BASE_DIR: $BASE_DIR"  # Debug statement
 
 # Ask the user to select an existing search subdirectory or create a new one
