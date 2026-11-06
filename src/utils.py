@@ -15,9 +15,13 @@ from typing import Optional, Dict, Any, List
 from pathlib import Path
 import re
 import ast
+import json
+import math
+import numbers
 from datetime import datetime
 import logging
 import sys
+from collections.abc import Mapping
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -69,36 +73,170 @@ def extract_rating_info(rating_data: Dict[str, Any]) -> tuple[Optional[float], O
         return rating_data.get('value'), rating_data.get('reviewCount')
     return None, None
 
-def extract_coordinates(df: pd.DataFrame) -> pd.DataFrame:
-    """Extract latitude and longitude from location data in DataFrame.
-    
-    Args:
-        df (pandas.DataFrame): DataFrame containing location data
-        
-    Returns:
-        pandas.DataFrame: DataFrame with extracted coordinates
+def _parse_coordinate_payload(value: Any) -> Any:
+    """Parse native or CSV-serialized coordinate containers without raising."""
+    if isinstance(value, str) and value.strip():
+        for parser in (json.loads, ast.literal_eval):
+            try:
+                parsed = parser(value)
+            except (ValueError, SyntaxError, TypeError, json.JSONDecodeError):
+                continue
+            if isinstance(parsed, (Mapping, list, tuple)):
+                return parsed
+    return value
+
+
+def _validated_coordinate(value: Any, *, latitude: bool) -> Optional[float]:
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    upper_bound = 90 if latitude else 180
+    if not math.isfinite(number) or not -upper_bound <= number <= upper_bound:
+        return None
+    return number
+
+
+def _coordinate_pairs(value: Any, depth: int = 0):
+    """Yield coordinate pairs from a bounded set of provider container shapes."""
+    if depth > 5:
+        return
+    parsed = _parse_coordinate_payload(value)
+    if isinstance(parsed, Mapping):
+        latitude_keys = ("latitude", "lat")
+        longitude_keys = ("longitude", "longitud", "lng", "lon")
+        # Try every alias pairing. A canonical NaN or out-of-range value must
+        # not prevent a valid alias in this same mapping from being considered.
+        for latitude_key in latitude_keys:
+            if latitude_key not in parsed:
+                continue
+            for longitude_key in longitude_keys:
+                if longitude_key in parsed:
+                    yield parsed[latitude_key], parsed[longitude_key]
+        for nested_key in ("coordinates", "location", "location_data", "coordinate"):
+            if nested_key in parsed:
+                yield from _coordinate_pairs(parsed[nested_key], depth + 1)
+    elif isinstance(parsed, (list, tuple)) and len(parsed) >= 2:
+        # Airbnb/GeoJSON coordinate arrays use [longitude, latitude].
+        yield parsed[1], parsed[0]
+
+
+def parse_coordinates(record: Any) -> tuple[Optional[float], Optional[float]]:
+    """Return a valid ``(latitude, longitude)`` pair from provider data.
+
+    The helper accepts native mappings, JSON/Python-literal strings, nested
+    ``location``/``coordinates`` fields, and coordinate arrays. It recognizes
+    Airbnb's historical ``longitud`` spelling and rejects non-finite or
+    out-of-range values. Invalid canonical fields are skipped so nested values
+    can still recover coordinates from existing CSV rows.
     """
-    if 'location' in df.columns:
-        try:
-            df['lat'] = df['location'].apply(lambda x: ast.literal_eval(str(x))['lat'] if pd.notna(x) else None)
-            df['lng'] = df['location'].apply(lambda x: ast.literal_eval(str(x))['lng'] if pd.notna(x) else None)
-        except Exception as e:
-            print(f"Error extracting coordinates: {e}")
+    for raw_latitude, raw_longitude in _coordinate_pairs(record):
+        latitude = _validated_coordinate(raw_latitude, latitude=True)
+        longitude = _validated_coordinate(raw_longitude, latitude=False)
+        if latitude is not None and longitude is not None:
+            return latitude, longitude
+    return None, None
+
+
+def extract_coordinates(df: pd.DataFrame) -> pd.DataFrame:
+    """Normalize coordinates in a DataFrame, including existing saved rows.
+
+    Existing canonical columns are revalidated on every call. Missing, NaN,
+    infinite, or out-of-range values therefore fall through to nested source
+    fields rather than masking a valid provider coordinate.
+    """
+    if not df.empty:
+        coords = df.apply(lambda row: parse_coordinates(row.to_dict()), axis=1)
+        df["lat"] = [point[0] for point in coords]
+        df["lng"] = [point[1] for point in coords]
+        df["latitude"] = df["lat"]
+        df["longitude"] = df["lng"]
+    else:
+        for column in ("lat", "lng", "latitude", "longitude"):
+            if column not in df.columns:
+                df[column] = pd.Series(dtype="float64")
     return df
 
-def extract_total_price(price: Dict[str, Any]) -> Optional[float]:
-    """Extract total price from price dictionary.
-    
-    Args:
-        price (dict): Dictionary containing price information
-        
-    Returns:
-        float: Total price amount
+
+def parse_stay_total(value: Any) -> Optional[float]:
+    """Parse an already identified stay-total amount as a positive finite number.
+
+    Currency symbols and localized decimal/thousands separators are accepted.
+    This function does not decide whether an amount is a stay total; callers
+    must select an explicit total field first.
     """
-    if isinstance(price, dict):
-        if 'total' in price and 'amount' in price['total']:
-            return float(price['total']['amount'])
-    return None
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, numbers.Number):
+        try:
+            amount = float(value)
+        except (TypeError, ValueError, OverflowError):
+            return None
+        return amount if math.isfinite(amount) and amount > 0 else None
+    if not isinstance(value, str):
+        return None
+    cleaned = "".join(char for char in value.strip().replace("\u00a0", "").replace(" ", "") if char.isdigit() or char in ",.-")
+    if not cleaned:
+        return None
+    if "," in cleaned and "." in cleaned:
+        if cleaned.rfind(",") > cleaned.rfind("."):
+            cleaned = cleaned.replace(".", "").replace(",", ".")
+        else:
+            cleaned = cleaned.replace(",", "")
+    elif "," in cleaned:
+        tail = cleaned.rsplit(",", 1)[-1]
+        cleaned = cleaned.replace(",", ".") if len(tail) in {1, 2} else cleaned.replace(",", "")
+    try:
+        amount = float(cleaned)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return amount if math.isfinite(amount) and amount > 0 else None
+
+
+def extract_total_price(price: Any) -> float:
+    """Extract an explicit total, returning NaN when price is unknown.
+
+    Numeric and scalar string inputs are treated as already selected totals.
+    Provider dictionaries must label a stay total; nightly unit amounts are
+    never used as a fallback.
+    """
+    parsed = price
+    if isinstance(price, str):
+        try:
+            parsed = json.loads(price)
+        except (json.JSONDecodeError, TypeError):
+            try:
+                parsed = ast.literal_eval(price)
+            except (ValueError, SyntaxError, TypeError):
+                parsed = price
+    if not isinstance(parsed, dict):
+        amount = parse_stay_total(parsed)
+        return amount if amount is not None else math.nan
+
+    breakdown = parsed.get("break_down", parsed.get("breakdown", []))
+    if isinstance(breakdown, list):
+        for item in breakdown:
+            if isinstance(item, dict) and str(item.get("description", "")).strip().casefold() == "total":
+                amount = parse_stay_total(item.get("amount"))
+                if amount is not None:
+                    return amount
+    total = parsed.get("total")
+    if isinstance(total, dict):
+        amount = parse_stay_total(total.get("amount"))
+    else:
+        amount = parse_stay_total(total)
+    if amount is not None:
+        return amount
+    main = parsed.get("main")
+    if isinstance(main, dict) and isinstance(main.get("details"), dict):
+        for label, raw_amount in main["details"].items():
+            if str(label).strip().casefold() in {"total", "total price", "total stay price"}:
+                amount = parse_stay_total(raw_amount)
+                if amount is not None:
+                    return amount
+    return math.nan
 
 def format_reviews(reviews: List[Dict[str, Any]]) -> str:
     """Format a list of reviews into a single string.

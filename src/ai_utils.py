@@ -42,9 +42,14 @@ def query_openai_gptX_with_schema(text, questions, role_prompt, model_name, api_
     data = {
         "model": model_name,
         "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": max_tokens,
-        "temperature": temperature
     }
+    # GPT-6 Luna, o1, o3, and newer models require max_completion_tokens and reasoning_effort: "none"
+    if any(m in model_name.lower() for m in ["gpt-6", "luna", "o1", "o3"]):
+        data["max_completion_tokens"] = max_tokens
+        data["reasoning_effort"] = "none"
+    else:
+        data["max_tokens"] = max_tokens
+        data["temperature"] = temperature
 
     if function_schema:
         data["functions"] = [function_schema]
@@ -58,8 +63,14 @@ def query_openai_gptX_with_schema(text, questions, role_prompt, model_name, api_
 
     try:
         logger.info("Sending request to OpenAI API.")
-        response = requests.post(url, headers=headers, json=data)
+        response = requests.post(url, headers=headers, json=data, timeout=45)
         
+        # If rejected due to temperature parameter with reasoning models, retry without temperature
+        if not response.ok and "temperature" in response.text and "temperature" in data:
+            logger.info("Retrying request without temperature parameter...")
+            del data["temperature"]
+            response = requests.post(url, headers=headers, json=data, timeout=45)
+
         # Check the status code and log it
         logger.info(f"Response status code: {response.status_code}")
         response_data = response.json()
@@ -96,12 +107,27 @@ def extract_ai_rating(ai_response: str) -> Optional[float]:
     Returns:
         float: Extracted rating value or None if not found
     """
+    if not ai_response:
+        return None
     try:
-        # Use regex to find the pattern {"AI_rating":X} or {"AI_rating":X.X}
-        # where X is an integer and X.X is a number with one decimal place
-        match = re.search(r'{"AI_rating":(\d+(?:\.\d)?)}', str(ai_response))
+        # 1. Parse JSON if present
+        if isinstance(ai_response, str):
+            try:
+                data = json.loads(ai_response)
+                if isinstance(data, dict) and 'AI_rating' in data:
+                    return float(data['AI_rating'])
+            except json.JSONDecodeError:
+                pass
+        
+        # 2. Match {"AI_rating": X}
+        match = re.search(r'"AI_rating":\s*(\d+(?:\.\d+)?)', str(ai_response))
         if match:
             return float(match.group(1))
+
+        # 3. Match explicit rating: e.g. "Rating: 4.5" or "4.5 / 5"
+        match_num = re.search(r'(?:rating|score)?\s*:?\s*\b([1-5](?:\.\d+)?)\b', str(ai_response), re.IGNORECASE)
+        if match_num:
+            return float(match_num.group(1))
     except Exception as e:
         logger.error(f"Error extracting AI rating: {e}")
         logger.error(f"Problematic AI response: {ai_response}")
@@ -177,6 +203,15 @@ def get_ai_rating(df: pd.DataFrame, text_columns: List[str], ai_config: Dict[str
     if new_column_name not in df.columns:
         df[new_column_name] = None
     
+    api_key = os.getenv('OPENAI_API_KEY')
+    if not api_key:
+        logger.warning("OpenAI API key not found in environment variables. Skipping AI processing.")
+        return df
+
+    questions = ai_config.get('questions', ['Provide an evaluation of the reviews.'])
+    role_prompt = ai_config.get('role_prompt', 'You are an AI assistant analyzing property reviews.')
+    model_name = ai_config.get('model_name') or ai_config.get('ai_model') or ai_config.get('default_model') or 'gpt-6-luna'
+
     # Track success rate
     success_count = 0
     total_count = 0
@@ -198,16 +233,11 @@ def get_ai_rating(df: pd.DataFrame, text_columns: List[str], ai_config: Dict[str
             continue
             
         try:
-            # Get AI rating
-            api_key = os.getenv('OPENAI_API_KEY')
-            if not api_key:
-                raise ValueError("OpenAI API key not found in environment variables")
-                
             response = query_openai_gptX_with_schema(
                 text_to_rate,
-                ai_config['questions'],
-                ai_config['role_prompt'],
-                ai_config['model_name'],
+                questions,
+                role_prompt,
+                model_name,
                 api_key,
                 function_schema=ai_config.get('function_schema'),
                 max_tokens=ai_config.get('max_tokens', 2000),

@@ -1,0 +1,59 @@
+/* Shared action colors: teal = commit/run, blue = secondary, red = destructive. */
+[data-testid="stButton"] button,
+[data-testid="stDownloadButton"] button,
+[data-testid="stLinkButton"] a {
+  background: #1456a0 !important;
+  border: 1px solid #1456a0 !important;
+  color: #fff !important;
+  font-weight: 600;
+  border-radius: 7px;
+}
+[data-testid="stButton"] button:hover,
+[data-testid="stDownloadButton"] button:hover,
+[data-testid="stLinkButton"] a:hover {
+  background: #10457f !important;
+  border-color: #10457f !important;
+}
+[data-testid="stButton"] button[kind="primary"],
+[data-testid="stButton"] button[data-testid="baseButton-primary"],
+[data-testid="stDownloadButton"] button[kind="primary"],
+[data-testid="stDownloadButton"] button[data-testid="baseButton-primary"] {
+  background: #146b60 !important;
+  border-color: #146b60 !important;
+}
+[data-testid="stButton"] button[kind="primary"]:hover,
+[data-testid="stDownloadButton"] button[kind="primary"]:hover {
+  background: #10584f !important;
+  border-color: #10584f !important;
+}
+/* A marker in an isolated button container supplies its semantic tone.
+   Both element selectors support Streamlit's older and newer DOM names. */
+:is(.element-container, [data-testid="stElementContainer"]):has([data-bnb-button-tone]) {
+  display: none !important;
+}
+[data-testid="stVerticalBlock"]:has(> :is(.element-container, [data-testid="stElementContainer"]) [data-bnb-button-tone="danger"])
+  > :is(.element-container, [data-testid="stElementContainer"]) button {
+  background: #b42318 !important;
+  border-color: #b42318 !important;
+}
+[data-testid="stVerticalBlock"]:has(> :is(.element-container, [data-testid="stElementContainer"]) [data-bnb-button-tone="danger"])
+  > :is(.element-container, [data-testid="stElementContainer"]) button:hover {
+  background: #941f17 !important;
+  border-color: #941f17 !important;
+}
+[data-testid="stButton"] button:disabled,
+[data-testid="stDownloadButton"] button:disabled,
+[data-testid="stVerticalBlock"]:has(> :is(.element-container, [data-testid="stElementContainer"]) [data-bnb-button-tone])
+  > :is(.element-container, [data-testid="stElementContainer"]) button:disabled {
+  background: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
+  color: #64748b !important;
+  opacity: 1 !important;
+  cursor: not-allowed;
+}
+[data-testid="stButton"] button:focus-visible,
+[data-testid="stDownloadButton"] button:focus-visible,
+[data-testid="stLinkButton"] a:focus-visible {
+  outline: 3px solid #f59e0b !important;
+  outline-offset: 3px;
+}

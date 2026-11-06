@@ -1,0 +1,12 @@
+# Runtime dependencies for the browser app; the historical requirements.txt also
+# contains notebook, desktop and document-processing packages.
+streamlit==1.38.0
+streamlit-folium==0.22.0
+streamlit-aggrid==1.0.5
+folium==0.17.0
+pyairbnb==2.2.2
+pandas>=2.2,<3
+numpy>=1.26,<3
+PyYAML>=6.0.1,<7
+requests>=2.32,<3
+openai==1.47.1

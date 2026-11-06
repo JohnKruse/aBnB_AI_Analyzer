@@ -25,7 +25,7 @@ default_focus_5: 'unexpected points'
 # AI Configuration
 ai:
   # Default model settings
-  default_model: gpt-4o-mini
+  default_model: gpt-6-luna
   default_max_tokens: 500
   default_temperature: 0.1
 

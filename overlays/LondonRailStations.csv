@@ -1,0 +1,357 @@
+Station,Local authority,Managed by,Stationcode,Farezone,Yearopened,Category,Coordinates,Area served,Latitude,Longitude
+Abbey Wood,Greenwich,Elizabeth line,ABW,4,1849,C,51.4915 0.1229,Abbey Wood,51.4915,0.1229
+Acton Central,Ealing,London Overground,ACC,3,1853,D,51.5088 -0.2634,Acton,51.5088,-0.2634
+Acton Main Line2,Ealing,Elizabeth line,AML,3,1868,E,51.5169 -0.2669,Acton,51.5169,-0.2669
+Albany Park,Bexley,Southeastern,AYP,5,1935,D,51.4358 0.1266,Albany Park,51.4358,0.1266
+Alexandra Palace3,Haringey,Great Northern,AAP,3,1873,D,51.5983 -0.1197,Wood Green,51.5983,-0.1197
+Anerley,Bromley,London Overground,ANZ,4,1839,E,51.4125 -0.0651,Anerley,51.4125,-0.0651
+Balham,Wandsworth,Southern,BAL,3,1863,C,51.4426 -0.1520,Balham,51.4426,-0.1520
+Banstead,Reigate and Bansteadout-boundary,Southern,BAD,6,1865,F,51.3292 -0.2132,Banstead,51.3292,-0.2132
+Barking,Barking and Dagenham,c2c,BKG,4,1854,B,51.5393 0.0817,Barking,51.5393,0.0817
+Barking Riverside,Barking and Dagenham,London Overground,BGV,4,2022,nan,51.5191 0.1147,Barking,51.5191,0.1147
+Barnehurst,Bexley,Southeastern,BNH,6,1895,C,51.4648 0.1595,Barnehurst,51.4648,0.1595
+Barnes,Richmond upon Thames,South Western Railway,BNS,3,1846,C,51.4671 -0.2420,Barnes,51.4671,-0.2420
+Barnes Bridge,Richmond upon Thames,South Western Railway,BNI,3,1916,C,51.4722 -0.2523,Barnes,51.4722,-0.2523
+Battersea Park4,Wandsworth,Southern,BAK,2,1865,D,51.4779 -0.1477,Battersea,51.4779,-0.1477
+Beckenham Hill,Lewisham,Thameslink,BEC,4,1892,E,51.4246 -0.0161,Downham,51.4246,-0.0161
+Beckenham Junction,Bromley,Southeastern,BKJ,4,1857,C,51.4109 -0.0257,Beckenham,51.4109,-0.0257
+Bellingham,Lewisham,Southeastern,BGM,3,1892,E,51.4342 -0.0199,Bellingham,51.4342,-0.0199
+Belmont,Sutton,Southern,BLM,5,1865,F,51.3440 -0.1986,Belmont,51.344,-0.1986
+Belvedere,Bexley,Southeastern,BVD,5,1859,E,51.4927 0.1524,Belvedere,51.4927,0.1524
+Berrylands,Kingston upon Thames,South Western Railway,BRS,5,1933,E,51.3988 -0.2803,Berrylands,51.3988,-0.2803
+Bethnal Green5,Tower Hamlets,London Overground,BET,2,1872,F,51.5230 -0.0595,Bethnal Green,51.523,-0.0595
+Bexley,Bexley,Southeastern,BXY,6,1866,D,51.4403 0.1479,Bexley,51.4403,0.1479
+Bexleyheath6,Bexley,Southeastern,BXH,5,1895,C,51.4635 0.1338,Bexleyheath,51.4635,0.1338
+Bickley,Bromley,Southeastern,BKL,5,1858,D,51.3995 0.0441,Bickley,51.3995,0.0441
+Birkbeck,Bromley,Southern,BIK,4,1930,F,51.4039 -0.0568,Anerley,51.4039,-0.0568
+BlackfriarsLondon,City of London,Thameslink,BFR,1,1886,A,51.5116 -0.1030,Blackfriars,51.5116,-0.1030
+Blackheath,Lewisham,Southeastern,BKH,3,1849,C,51.4663 0.0064,Blackheath,51.4663,0.0064
+Blackhorse Road,Waltham Forest,London Underground,BHO,3,1894,E,51.5866 -0.0416,Walthamstow,51.5866,-0.0416
+Bond Street,Westminster,Elizabeth line,BDS,1,2022,nan,51.5142 -0.1485,Mayfair,51.5142,-0.1485
+Bowes Park,Haringey,Great Northern,BOP,34,1880,E,51.6078 -0.1209,Bowes Park,51.6078,-0.1209
+Brent Cross West,Barnet,Thameslink,BCZ,3,2023,nan,51.5687 -0.2269,Brent Cross,51.5687,-0.2269
+Brentford,Hounslow,South Western Railway,BFD,4,1849,E,51.4875 -0.3096,Brentford,51.4875,-0.3096
+Brimsdown,Enfield,Greater Anglia,BMD,5,1884,E,51.6556 -0.0301,Brimsdown,51.6556,-0.0301
+Brixton,Lambeth,Southeastern,BRX,2,1862,E,51.4629 -0.1132,Brixton,51.4629,-0.1132
+Brockley,Lewisham,London Overground,BCY,2,1871,D,51.4645 -0.0369,Brockley,51.4645,-0.0369
+Bromley North,Bromley,Southeastern,BMN,4,1878,D,51.4088 0.0179,Bromley,51.4088,0.0179
+Bromley South,Bromley,Southeastern,BMS,5,1858,B,51.4004 0.0181,Bromley,51.4004,0.0181
+Brondesbury,Brent,London Overground,BSY,2,1860,E,51.5451 -0.2020,Brondesbury,51.5451,-0.2020
+Brondesbury Park,Brent,London Overground,BSP,2,1904,E,51.5407 -0.2103,Brondesbury,51.5407,-0.2103
+Bruce Grove,Haringey,London Overground,BCV,3,1872,E,51.5940 -0.0704,Tottenham,51.594,-0.0704
+Bush Hill Park7,Enfield,London Overground,BHK,5,1880,D,51.6418 -0.0691,Bush Hill Park,51.6418,-0.0691
+Caledonian Road  Barnsbury,Islington,London Overground,CIR,2,1850,E,51.5432 -0.1145,Barnsbury,51.5432,-0.1145
+Cambridge Heath,Tower Hamlets,London Overground,CBH,2,1872,F,51.5321 -0.0572,Cambridge Heath,51.5321,-0.0572
+Camden Road,Camden,London Overground,CMD,2,1870,D,51.5444 -0.1401,Camden Town,51.5444,-0.1401
+Canada Water,Southwark,London Underground,ZCW,2,1999,unlisted,51.4983 -0.0500,Canada Water,51.4983,-0.0500
+Canary Wharf,Tower Hamlets,Elizabeth line,CWX,2,2022,unlisted,51.5061 -0.0158,Canary Wharf,51.5061,-0.0158
+Cannon StreetLondon,City of London,Network Rail,CST,1,1866,A,51.5101 -0.0912,City of London,51.5101,-0.0912
+Canonbury,Islington,London Overground,CNN,2,1869,F,51.5482 -0.0925,Canonbury,51.5482,-0.0925
+Carshalton,Sutton,Southern,CSH,5,1868,D,51.3686 -0.1659,Carshalton,51.3686,-0.1659
+Carshalton Beeches8,Sutton,Southern,CSB,5,1906,E,51.3577 -0.1714,Carshalton,51.3577,-0.1714
+Castle Bar Park,Ealing,Great Western Railway,CBP,4,1906,E,51.5228 -0.3323,West Ealing,51.5228,-0.3323
+Caterham,Tandridgeout-boundary,Southern,CAT,6,1856,D,51.2821 -0.0783,Caterham,51.2821,-0.0783
+Catford,Lewisham,Southeastern,CTF,3,1892,D,51.4447 -0.0261,Catford,51.4447,-0.0261
+Catford Bridge,Lewisham,Southeastern,CFB,3,1857,D,51.4446 -0.0250,Catford,51.4446,-0.0250
+Chadwell Heath,Redbridge,Elizabeth line,CTH,5,1864,C,51.5678 0.1292,Chadwell Heath,51.5678,0.1292
+Charing CrossLondon,Westminster,Network Rail,CHX,1,1864,A,51.5075 -0.1231,Charing Cross,51.5075,-0.1231
+Charlton,Greenwich,Southeastern,CTN,3,1849,D,51.4868 0.0310,Charlton,51.4868,0.0310
+Cheam,Sutton,Southern,CHE,5,1844,D,51.3560 -0.2147,Cheam,51.356,-0.2147
+Chelsfield,Bromley,Southeastern,CLD,6,1868,D,51.3565 0.1076,Chelsfield,51.3565,0.1076
+Chessington North,Kingston upon Thames,South Western Railway,CSN,6,1939,D,51.3642 -0.3005,Chessington,51.3642,-0.3005
+Chessington South,Kingston upon Thames,South Western Railway,CSS,6,1939,E,51.3569 -0.3080,Chessington,51.3569,-0.3080
+Chingford,Waltham Forest,London Overground,CHI,5,1873,C,51.6331 0.0094,Chingford,51.6331,0.0094
+Chipstead,Reigate and Bansteadout-boundary,Southern,CHP,6,1899,E,51.3093 -0.1693,Chipstead,51.3093,-0.1693
+Chislehurst,Bromley,Southeastern,CIT,5,1865,D,51.4057 0.0573,Chislehurst,51.4057,0.0573
+Chiswick9,Hounslow,South Western Railway,CHK,3,1849,E,51.4813 -0.2683,Chiswick,51.4813,-0.2683
+City ThameslinkLondon,City of London,Thameslink,CTK,1,1990,C,51.5163 -0.1037,City of London,51.5163,-0.1037
+Clapham High Street,Lambeth,London Overground,CLP,2,1866,F,51.4658 -0.1328,Clapham,51.4658,-0.1328
+Clapham Junction,Wandsworth,South Western Railway,CLJ,2,1863,B,51.4644 -0.1703,Battersea,51.4644,-0.1703
+Clapton,Hackney,London Overground,CPT,23,1873,D,51.5617 -0.0571,Clapton,51.5617,-0.0571
+Clock House,Bromley,Southeastern,CLK,4,1864,D,51.4088 -0.0411,Beckenham,51.4088,-0.0411
+Coulsdon South,Croydon,Southern,CDS,6,1889,D,51.3157 -0.1380,Coulsdon,51.3157,-0.1380
+Coulsdon Town,Croydon,Southern,CDN,6,1904,E,51.3219 -0.1340,Coulsdon,51.3219,-0.1340
+Crayford,Bexley,Southeastern,CRY,6,1866,D,51.4483 0.1786,Crayford,51.4483,0.1786
+Crews Hill10,Enfield,Great Northern,CWH,6,1910,F,51.6845 -0.1072,Crews Hill,51.6845,-0.1072
+Cricklewood,Barnet,Thameslink,CRI,3,1868,E,51.5586 -0.2129,Cricklewood,51.5586,-0.2129
+Crofton Park,Lewisham,Southeastern,CFT,3,1892,E,51.4550 -0.0367,Crofton Park,51.455,-0.0367
+Crouch Hill,Islington,London Overground,CRH,3,1868,E,51.5720 -0.1171,Stroud Green,51.572,-0.1171
+Crystal Palace,Bromley,London Overground,CYP,34,1854,D,51.4182 -0.0726,Crystal Palace,51.4182,-0.0726
+Custom House,Newham,Elizabeth line,CUS,3,2022,unlisted,51.5096 0.0259,Custom House,51.5096,0.0259
+Dagenham Dock,Barking and Dagenham,c2c,DDK,5,1908,E,51.5268 0.1450,Dagenham Dock,51.5268,0.1450
+Dalston Junction,Hackney,London Overground,DLJ,2,2010c,unlisted,51.5453 -0.0747,Dalston,51.5453,-0.0747
+Dalston Kingsland,Hackney,London Overground,DLK,2,1983,D,51.5482 -0.0763,Dalston,51.5482,-0.0763
+Denmark Hill,Southwark,Thameslink,DMK,2,1866,D,51.4683 -0.0894,Denmark Hill,51.4683,-0.0894
+Deptford,Lewisham,Southeastern,DEP,2,1836,E,51.4788 -0.0265,Deptford,51.4788,-0.0265
+Drayton Green11,Ealing,Great Western Railway,DRG,4,1905,F,51.5165 -0.3300,West Ealing,51.5165,-0.3300
+Drayton Park,Islington,Great Northern,DYP,2,1904,E,51.5528 -0.1055,Highbury,51.5528,-0.1055
+Ealing Broadway,Ealing,Elizabeth line,EAL,3,1838,C,51.5147 -0.3017,Ealing,51.5147,-0.3017
+Earlsfield12,Wandsworth,South Western Railway,EAD,3,1884,D,51.4424 -0.1877,Earlsfield,51.4424,-0.1877
+East Croydon13,Croydon,Southern,ECR,5,1841,B,51.3753 -0.0930,Croydon,51.3753,-0.0930
+East Dulwich,Southwark,Southern,EDW,2,1868,E,51.4616 -0.0804,East Dulwich,51.4616,-0.0804
+Eden Park,Bromley,Southeastern,EDN,5,1882,E,51.3900 -0.0262,Eden Park,51.39,-0.0262
+Edmonton Green,Enfield,London Overground,EDR,4,1872,C,51.6242 -0.0614,Edmonton,51.6242,-0.0614
+Elephant  Castle14,Southwark,Thameslink,EPH,12,1862,E,51.4938 -0.0986,Newington,51.4938,-0.0986
+Elmers End,Bromley,Southeastern,ELE,4,1864,D,51.3981 -0.0496,Elmers End,51.3981,-0.0496
+Elmstead Woods,Bromley,Southeastern,ESD,4,1904,D,51.4168 0.0441,Elmstead,51.4168,0.0441
+Elstree  Borehamwood15,Hertsmereout-boundary,Thameslink,ELS,6,1868,E,51.6531 -0.2802,Borehamwood,51.6531,-0.2802
+Eltham,Greenwich,Southeastern,ELW,4,1895,C,51.4555 0.0515,Eltham,51.4555,0.0515
+Emerson Park,Havering,London Overground,EMP,6,1909,F,51.5687 0.2204,Emerson Park,51.5687,0.2204
+Enfield Chase10,Enfield,Great Northern,ENC,5,1910,D,51.6529 -0.0908,Enfield,51.6529,-0.0908
+Enfield Lock16,Enfield,Greater Anglia,ENL,6,1855,E,51.6709 -0.0284,Enfield Lock,51.6709,-0.0284
+Enfield Town10,Enfield,London Overground,ENF,5,1849,C,51.6516 -0.0792,Enfield,51.6516,-0.0792
+Epsom Downs,Epsom and Ewellout-boundary,Southern,EPD,6,1865,F,51.3237 -0.2389,Epsom Downs,51.3237,-0.2389
+Erith17,Bexley,Southeastern,ERH,6,1849,E,51.4816 0.1754,Erith,51.4816,0.1754
+Essex Road,Islington,Great Northern,EXR,2,1904,E,51.5406 -0.0963,Canonbury,51.5406,-0.0963
+EustonLondon,Camden,Network Rail,EUS,1,1837,A,51.5287 -0.1345,Camden,51.5287,-0.1345
+Ewell East,Epsom and Ewellout-boundary,Southern,EWE,6,1847,E,51.3451 -0.2419,Ewell,51.3451,-0.2419
+Ewell West,Epsom and Ewellout-boundary,South Western Railway,EWW,6,1859,C,51.3502 -0.2569,Ewell,51.3502,-0.2569
+Falconwood,Bexley,Southeastern,FCN,4,1936,D,51.4592 0.0799,Falconwood,51.4592,0.0799
+Farringdon,Islington,London Underground,ZFD,1,1863,E,51.5206 -0.1053,Clerkenwell,51.5206,-0.1053
+Feltham,Hounslow,South Western Railway,FEL,6,1848,C,51.4481 -0.4088,Feltham,51.4481,-0.4088
+Fenchurch StreetLondon,City of London,c2c,FST,1,1841,A,51.5114 -0.0783,City of London,51.5114,-0.0783
+Finchley Road  Frognal,Camden,London Overground,FNY,2,1860,E,51.5499 -0.1837,Frognal,51.5499,-0.1837
+Finsbury Park,Islington,Great Northern,FPK,2,1861,C,51.5647 -0.1064,Finsbury Park,51.5647,-0.1064
+Forest Gate18,Newham,Elizabeth line,FOG,3,1839,C,51.5494 0.0242,Forest Gate,51.5494,0.0242
+Forest Hill,Lewisham,London Overground,FOH,3,1839,C,51.4393 -0.0533,Forest Hill,51.4393,-0.0533
+Fulwell19,Richmond upon Thames,South Western Railway,FLW,6,1864,E,51.4334 -0.3508,Fulwell,51.4334,-0.3508
+Gidea Park20,Havering,Elizabeth line,GDP,6,1910,C,51.5820 0.2063,Gidea Park,51.582,0.2063
+Gipsy Hill12,Lambeth,Southern,GIP,3,1856,E,51.4246 -0.0840,Gipsy Hill,51.4246,-0.0840
+Goodmayes21,Redbridge,Elizabeth line,GMY,4,1901,C,51.5655 0.1109,Goodmayes,51.5655,0.1109
+Gordon Hill10,Enfield,Great Northern,GDH,5,1910,D,51.6632 -0.0943,Gordon Hill,51.6632,-0.0943
+Gospel Oak,Camden,London Overground,GPO,2,1860,D,51.5552 -0.1514,Gospel Oak,51.5552,-0.1514
+Grange Park10,Enfield,Great Northern,GPK,5,1910,E,51.6431 -0.0969,Grange Park,51.6431,-0.0969
+Greenford,Ealing,London Underground,GFD,4,1904,unlisted,51.5426 -0.3463,Greenford,51.5426,-0.3463
+Greenwich,Greenwich,Southeastern,GNW,23,1836,D,51.4782 -0.0134,Greenwich,51.4782,-0.0134
+Grove Park,Lewisham,Southeastern,GRP,4,1871,C,51.4306 0.0219,Grove Park,51.4306,0.0219
+Gunnersbury,Hounslow,London Underground,GUN,3,1869,D,51.4918 -0.2750,Gunnersbury,51.4918,-0.2750
+Hackbridge12,Sutton,Southern,HCB,4,1868,E,51.3778 -0.1539,Hackbridge,51.3778,-0.1539
+Hackney Central,Hackney,London Overground,HKC,2,1980c,D,51.5470 -0.0559,Hackney,51.547,-0.0559
+Hackney Downs22,Hackney,London Overground,HAC,2,1872,C,51.5483 -0.0601,Hackney,51.5483,-0.0601
+Hackney Wick,Tower Hamlets,London Overground,HKW,2,1980,E,51.5432 -0.0249,Hackney Wick,51.5432,-0.0249
+Hadley Wood23,Enfield,Great Northern,HDW,6,1885,E,51.6688 -0.1761,Hadley Wood,51.6688,-0.1761
+Haggerston,Hackney,London Overground,HGG,2,2010c,unlisted,51.5381 -0.0736,Haggerston,51.5381,-0.0736
+Hampstead Heath,Camden,London Overground,HDH,2,1860,D,51.5553 -0.1654,Hampstead,51.5553,-0.1654
+Hampton12,Richmond upon Thames,South Western Railway,HMP,6,1864,C,51.4159 -0.3717,Hampton,51.4159,-0.3717
+Hampton Court,Elmbridgeout-boundary,South Western Railway,HMC,6,1849,C,51.4028 -0.3425,Molesey,51.4028,-0.3425
+Hampton Wick,Richmond upon Thames,South Western Railway,HMW,6,1863,D,51.4141 -0.3107,Hampton Wick,51.4141,-0.3107
+Hanwell24,Ealing,Elizabeth line,HAN,4,1839b,E,51.5116 -0.3389,Hanwell,51.5116,-0.3389
+Harlesden,Brent,London Underground,HDN,3,1912,E,51.5363 -0.2581,Harlesden,51.5363,-0.2581
+Harold Wood25,Havering,Elizabeth line,HRO,6,1868,C,51.5928 0.2343,Harold Wood,51.5928,0.2343
+Harringay26,Haringey,Great Northern,HGY,3,1865,D,51.5770 -0.1052,Harringay,51.577,-0.1052
+Harringay Green Lanes27,Haringey,London Overground,HRY,3,1880,E,51.5774 -0.0977,Harringay,51.5774,-0.0977
+Harrow  Wealdstone,Harrow,London Underground,HRW,5,1837,C,51.5921 -0.3347,Wealdstone,51.5921,-0.3347
+Harrow-on-the-Hill,Harrow,London Underground,HOH,5,1880,unlisted,51.5794 -0.3370,Harrow,51.5794,-0.3370
+Hatch End28,Harrow,London Overground,HTE,6,1844,E,51.6097 -0.3682,Hatch End,51.6097,-0.3682
+Haydons Road,Merton,Thameslink,HYR,3,1868,E,51.4255 -0.1880,Summerstown,51.4255,-0.1880
+Hayes,Bromley,Southeastern,HYS,5,1882,D,51.3765 0.0102,Hayes,51.3765,0.0102
+Hayes  Harlington29,Hillingdon,Elizabeth line,HAY,5,1864,D,51.5031 -0.4203,Hayes,51.5031,-0.4203
+Headstone Lane30,Harrow,London Overground,HDL,5,1917,E,51.6019 -0.3566,Headstone,51.6019,-0.3566
+Heathrow Central,Hillingdon,Heathrow Express,HXX,6,1999,unlisted,51.4710 -0.4540,Heathrow Airport,51.471,-0.4540
+Heathrow Terminal 4,Hillingdon,Heathrow Express,HAF,6,1999,unlisted,51.4580 -0.4450,Heathrow Airport,51.458,-0.4450
+Heathrow Terminal 5,Hillingdon,Heathrow Express,HWV,6,2008,unlisted,51.4723 -0.4880,Heathrow Airport,51.4723,-0.4880
+Hendon,Barnet,Thameslink,HEN,34,1868,E,51.5800 -0.2389,Hendon,51.58,-0.2389
+Herne Hill,Lambeth,Southeastern,HNH,23,1862,C,51.4533 -0.1021,Herne Hill,51.4533,-0.1021
+Highams Park31,Waltham Forest,London Overground,HIP,4,1873,C,51.6084 -0.0001,Highams Park,51.6084,-0.0001
+Highbury  Islington,Islington,London Underground,HHY,2,1872,CFe,51.5458 -0.1050,Highbury,51.5458,-0.1050
+Hither Green,Lewisham,Southeastern,HGR,3,1866,C,51.4519 -0.0008,Hither Green,51.4519,-0.0008
+Homerton,Hackney,London Overground,HMN,2,1868,E,51.5470 -0.0431,Homerton,51.547,-0.0431
+Honor Oak Park,Lewisham,London Overground,HPA,3,1886,D,51.4501 -0.0456,Honor Oak,51.4501,-0.0456
+Hornsey32,Haringey,Great Northern,HRN,3,1850,D,51.5862 -0.1116,Hornsey,51.5862,-0.1116
+Hounslow33,Hounslow,South Western Railway,HOU,5,1849,D,51.4620 -0.3622,Hounslow,51.462,-0.3622
+Hoxton,Hackney,London Overground,HOX,12,2010,unlisted,51.5318 -0.0754,Hoxton,51.5318,-0.0754
+Ilford34,Redbridge,Elizabeth line,IFD,4,1839,C,51.5586 0.0696,Ilford,51.5586,0.0696
+Imperial Wharf,Hammersmith and Fulham,London Overground,IMW,2,2009,E,51.4751 -0.1828,Sands End,51.4751,-0.1828
+Isleworth12,Hounslow,South Western Railway,ISL,4,1850,F,51.4749 -0.3370,Isleworth,51.4749,-0.3370
+Kenley35,Croydon,Southern,KLY,6,1856,E,51.3246 -0.1007,Kenley,51.3246,-0.1007
+Kensal Green,Brent,London Underground,KNL,2,1916,E,51.5306 -0.2243,Kensal Green,51.5306,-0.2243
+Kensal Rise,Brent,London Overground,KNR,2,1873,E,51.5345 -0.2204,Kensal Green,51.5345,-0.2204
+Kensington Olympia,Kensington and Chelsea,London Overground,KPA,2,1864,C,51.4985 -0.2110,Kensington,51.4985,-0.2110
+Kent House,Bromley,Southeastern,KTH,4,1884,D,51.4123 -0.0453,Beckenham,51.4123,-0.0453
+Kentish Town,Camden,London Underground,KTN,2,1868,F,51.5505 -0.1396,Kentish Town,51.5505,-0.1396
+Kentish Town West,Camden,London Overground,KTW,2,1860,E,51.5468 -0.1468,Kentish Town,51.5468,-0.1468
+Kenton,Brent,London Underground,KNT,4,1912,E,51.5818 -0.3167,Kenton,51.5818,-0.3167
+Kew Bridge33,Hounslow,South Western Railway,KWB,3,1849,F,51.4895 -0.2878,Brentford,51.4895,-0.2878
+Kew Gardens,Richmond upon Thames,London Underground,KWG,34,1870,D,51.4772 -0.2849,Kew,51.4772,-0.2849
+Kidbrooke,Greenwich,Southeastern,KDB,3,1895,D,51.4621 0.0273,Kidbrooke,51.4621,0.0273
+Kilburn High Road,Camden,London Overground,KBN,2,1852,E,51.5373 -0.1925,Kilburn,51.5373,-0.1925
+Kings CrossLondon,Camden,Network Rail,KGX,1,1852,A,51.5324 -0.1233,Kings Cross,51.5324,-0.1233
+Kingston36,Kingston upon Thames,South Western Railway,KNG,6,1845,C,51.4129 -0.3019,Kingston upon Thames,51.4129,-0.3019
+Kingswood,Reigate and Bansteadout-boundary,Southern,KND,6,1897,E,51.2950 -0.2110,Kingswood,51.295,-0.2110
+Knockholt12,Bromley,Southeastern,KCK,6,1876,E,51.3459 0.1307,Chelsfield,51.3459,0.1307
+Ladywell,Lewisham,Southeastern,LAD,3,1857,E,51.4562 -0.0192,Ladywell,51.4562,-0.0192
+Lea Bridge,Waltham Forest,Greater Anglia,LEB,3,2016c,unknown,51.5665 -0.0366,Lea Bridge,51.5665,-0.0366
+Lee,Lewisham,Southeastern,LEE,3,1866,D,51.4497 0.0128,Lee,51.4497,0.0128
+Lewisham,Lewisham,Southeastern,LEW,23,1849,C,51.4658 -0.0141,Lewisham,51.4658,-0.0141
+Leyton Midland Road,Waltham Forest,London Overground,LEM,3,1894,E,51.5693 -0.0072,Leyton,51.5693,-0.0072
+Leytonstone High Road,Waltham Forest,London Overground,LER,3,1894,E,51.5634 0.0073,Leytonstone,51.5634,0.0073
+Limehouse,Tower Hamlets,c2c,LHS,2,1840,E,51.5126 -0.0402,Limehouse,51.5126,-0.0402
+Liverpool StreetLondon,City of London,Network Rail,LST,1,1874,A,51.5185 -0.0819,Bishopsgate,51.5185,-0.0819
+London BridgeLondon,Southwark,Network Rail,LBG,1,1836,A,51.5053 -0.0851,Southwark,51.5053,-0.0851
+London Fields,Hackney,London Overground,LOF,2,1872,F,51.5407 -0.0577,London Fields,51.5407,-0.0577
+Loughborough Junction,Lambeth,Thameslink,LGJ,2,1864,E,51.4661 -0.1020,Brixton,51.4661,-0.1020
+Lower Sydenham,Lewisham,Southeastern,LSY,4,1857,E,51.4245 -0.0336,Sydenham,51.4245,-0.0336
+Malden Manor,Kingston upon Thames,South Western Railway,MAL,4,1938,E,51.3847 -0.2618,Old Malden,51.3847,-0.2618
+Manor Park37,Newham,Elizabeth line,MNP,34,1872,C,51.5526 0.0463,Manor Park,51.5526,0.0463
+Maryland38,Newham,Elizabeth line,MYL,3,1874,D,51.5460 0.0059,Maryland,51.546,0.0059
+Meridian Water,Enfield,Greater Anglia,MRW,4,2019,,51.6083 -0.0509,Upper Edmonton,51.6083,-0.0509
+MaryleboneLondon,Westminster,Chiltern Railways,MYB,1,1899,A,51.5231 -0.1630,Marylebone,51.5231,-0.1630
+Maze Hill39,Greenwich,Southeastern,MZH,3,1873,D,51.4830 0.0032,Maze Hill,51.483,0.0032
+Mill Hill Broadway,Barnet,Thameslink,MIL,4,1868,D,51.6128 -0.2491,Mill Hill,51.6128,-0.2491
+Mitcham Eastfields,Merton,Southern,MTC,3,2008,E,51.4077 -0.1547,Mitcham,51.4077,-0.1547
+Mitcham Junction40,Merton,Southern,MIJ,4,1868,E,51.3930 -0.1576,Mitcham,51.393,-0.1576
+MoorgateLondon,City of London,London Underground,MOG,1,1865,E,51.5187 -0.0896,Moorgate,51.5187,-0.0896
+Morden South,Merton,Thameslink,MDS,4,1930,F,51.3965 -0.1990,Morden,51.3965,-0.1990
+Mortlake12,Richmond upon Thames,South Western Railway,MTL,3,1846,C,51.4682 -0.2672,Mortlake,51.4682,-0.2672
+Motspur Park,Merton,South Western Railway,MOT,4,1938,C,51.3958 -0.2397,Motspur Park,51.3958,-0.2397
+Mottingham,Greenwich,Southeastern,MTG,4,1866,D,51.4401 0.0504,Mottingham,51.4401,0.0504
+New Barnet,Barnet,Great Northern,NBA,5,1857,D,51.6488 -0.1738,New Barnet,51.6488,-0.1738
+New Beckenham,Bromley,Southeastern,NBC,4,1857,E,51.4164 -0.0348,Beckenham,51.4164,-0.0348
+New Cross,Lewisham,Southeastern,NWX,2,1850,C,51.4760 -0.0325,New Cross,51.476,-0.0325
+New Cross Gate,Lewisham,London Overground,NXG,2,1839,C,51.4752 -0.0406,New Cross,51.4752,-0.0406
+New Eltham,Greenwich,Southeastern,NEH,4,1878,C,51.4380 0.0705,New Eltham,51.438,0.0705
+New Malden,Kingston upon Thames,South Western Railway,NEM,4,1838,C,51.4039 -0.2560,New Malden,51.4039,-0.2560
+New Southgate41,Barnet,Great Northern,NSG,4,1850,E,51.6142 -0.1432,New Southgate,51.6142,-0.1432
+Norbiton12,Kingston upon Thames,South Western Railway,NBT,5,1869,C,51.4124 -0.2838,Norbiton,51.4124,-0.2838
+Norbury42,Croydon,Southern,NRB,3,1878,C,51.4114 -0.1214,Norbury,51.4114,-0.1214
+North Dulwich12,Southwark,Southern,NDL,23,1868,E,51.4543 -0.0887,Dulwich,51.4543,-0.0887
+Northolt Park,Ealing,Chiltern Railways,NLT,5,1926,E,51.5574 -0.3595,Northolt,51.5574,-0.3595
+North Sheen12,Richmond upon Thames,South Western Railway,NSH,3,1930,E,51.4656 -0.2865,Richmond,51.4656,-0.2865
+Northumberland Park,Haringey,Greater Anglia,NUM,3,1840,E,51.5986 -0.0551,Northumberland Park,51.5986,-0.0551
+North Wembley,Brent,London Underground,NWB,4,1912,E,51.5627 -0.3040,North Wembley,51.5627,-0.3040
+Norwood Junction,Croydon,London Overground,NWD,4,1841,C,51.3971 -0.0749,South Norwood,51.3971,-0.0749
+Nunhead,Southwark,Southeastern,NHD,2,1865,E,51.4671 -0.0527,Nunhead,51.4671,-0.0527
+Oakleigh Park43,Barnet,Great Northern,OKL,4,1873,D,51.6379 -0.1667,Oakleigh Park,51.6379,-0.1667
+Old StreetLondon,Islington,London Underground,OLD,1,1901,E,51.5258 -0.0850,St Lukes,51.5258,-0.0850
+Orpington,Bromley,Southeastern,ORP,6,1868,C,51.3741 0.0885,Orpington,51.3741,0.0885
+PaddingtonLondon,Westminster,Network Rail,PAD,1,1838,A,51.5171 -0.1769,Paddington,51.5171,-0.1769
+Palmers Green44,Enfield,Great Northern,PAL,4,1871,C,51.6184 -0.1102,Palmers Green,51.6184,-0.1102
+Peckham Rye,Southwark,Southern,PMR,2,1864,D,51.4701 -0.0691,Peckham,51.4701,-0.0691
+Penge East,Bromley,Southeastern,PNE,4,1862,D,51.4191 -0.0537,Penge,51.4191,-0.0537
+Penge West,Bromley,London Overground,PNW,4,1839,E,51.4174 -0.0606,Penge,51.4174,-0.0606
+Petts Wood,Bromley,Southeastern,PET,5,1928,C,51.3889 0.0742,Petts Wood,51.3889,0.0742
+Plumstead,Greenwich,Southeastern,PLU,4,1849,D,51.4897 0.0844,Plumstead,51.4897,0.0844
+Ponders End45,Enfield,Greater Anglia,PON,5,1840,C,51.6420 -0.0349,Ponders End,51.642,-0.0349
+Purley,Croydon,Southern,PUR,6,1841,C,51.3377 -0.1135,Purley,51.3377,-0.1135
+Purley Oaks12,Croydon,Southern,PUO,6,1899,D,51.3469 -0.0987,South Croydon,51.3469,-0.0987
+Putney46,Wandsworth,South Western Railway,PUT,23,1844,C,51.4611 -0.2162,Putney,51.4611,-0.2162
+Queens Park,Brent,London Underground,QPW,2,1879,C,51.5341 -0.2053,Queens Park,51.5341,-0.2053
+Queens Road Peckham,Southwark,Southern,QRP,2,1866,E,51.4736 -0.0573,Peckham,51.4736,-0.0573
+Queenstown Road Battersea,Wandsworth,South Western Railway,QRB,2,1877,F,51.4748 -0.1470,Battersea,51.4748,-0.1470
+Rainham,Havering,c2c,RNM,6,1854,C,51.5169 0.1905,Rainham,51.5169,0.1905
+Ravensbourne,Bromley,Southeastern,RVB,4,1892,E,51.4141 -0.0075,Beckenham,51.4141,-0.0075
+Raynes Park,Merton,South Western Railway,RAY,4,1838,C,51.4094 -0.2299,Raynes Park,51.4094,-0.2299
+Rectory Road22,Hackney,London Overground,REC,2,1872,E,51.5584 -0.0681,West Hackney,51.5584,-0.0681
+Reedham,Croydon,Southern,RHM,6,1911,E,51.3313 -0.1233,Purley,51.3313,-0.1233
+Richmond,Richmond upon Thames,South Western Railway,RMD,4,1846,B,51.4630 -0.3014,Richmond,51.463,-0.3014
+Riddlesdown47,Croydon,Southern,RDD,6,1927,E,51.3323 -0.0996,Riddlesdown,51.3323,-0.0996
+Romford,Havering,Elizabeth line,RMF,6,1839,C,51.5749 0.1827,Romford,51.5749,0.1827
+Rotherhithe,Southwark,London Overground,ROE,2,1869,unlisted,51.5008 -0.0522,Rotherhithe,51.5008,-0.0522
+St Helier,Merton,Thameslink,SIH,4,1930,F,51.3901 -0.1985,St Helier,51.3901,-0.1985
+St James Street48,Waltham Forest,London Overground,SJS,3,1870,D,51.5810 -0.0323,Walthamstow,51.581,-0.0323
+St Johns,Lewisham,Southeastern,SAJ,2,1849,E,51.4691 -0.0225,St Johns,51.4691,-0.0225
+St Margarets,Richmond upon Thames,South Western Railway,SMG,4,1876,C,51.4550 -0.3204,St Margarets,51.455,-0.3204
+St Mary Cray,Bromley,Southeastern,SMY,6,1858,C,51.3947 0.1058,St Mary Cray,51.3947,0.1058
+St PancrasLondon,Camden,Network RailEurostar,STP,1,1868,ACd,51.5314 -0.1261,St Pancras,51.5314,-0.1261
+Sanderstead,Croydon,Southern,SNR,6,1884,D,51.3484 -0.0940,Sanderstead,51.3484,-0.0940
+Selhurst12,Croydon,Southern,SRS,4,1865,D,51.3921 -0.0883,Selhurst,51.3921,-0.0883
+Seven Kings21,Redbridge,Elizabeth line,SVK,4,1899,C,51.5635 0.0969,Seven Kings,51.5635,0.0969
+Seven Sisters,Haringey,London Overground,SVS,3,1872,D,51.5839 -0.0756,Seven Sisters,51.5839,-0.0756
+Shadwell,Tower Hamlets,London Overground,SDE,2,1876,unlisted,51.5112 -0.0569,Shadwell,51.5112,-0.0569
+Shepherds Bush,Hammersmith and Fulham,London Overground,SPB,2,2008,D,51.5051 -0.2175,Shepherds Bush,51.5051,-0.2175
+Shoreditch High Street,Hackney,London Overground,SDC,1,2010,unlisted,51.5234 -0.0768,Shoreditch,51.5234,-0.0768
+Shortlands,Bromley,Southeastern,SRT,4,1858,D,51.4058 0.0019,Shortlands,51.4058,0.0019
+Sidcup,Bexley,Southeastern,SID,5,1866,C,51.4338 0.1040,Sidcup,51.4338,0.1040
+Silver Street,Enfield,London Overground,SLV,4,1872,D,51.6149 -0.0676,Edmonton,51.6149,-0.0676
+Slade Green,Bexley,Southeastern,SGR,6,1866,E,51.4678 0.1904,Slade Green,51.4678,0.1904
+South Acton,Ealing,London Overground,SAT,3,1880,E,51.4994 -0.2707,Acton,51.4994,-0.2707
+Southall,Ealing,Elizabeth line,STL,4,1839,D,51.5060 -0.3783,Southall,51.506,-0.3783
+South Bermondsey,Southwark,Southern,SBM,2,1866,E,51.4887 -0.0548,South Bermondsey,51.4887,-0.0548
+Southbury49,Enfield,London Overground,SBU,5,1891,E,51.6488 -0.0524,Enfield,51.6488,-0.0524
+South Croydon,Croydon,Southern,SCY,5,1865,D,51.3629 -0.0933,South Croydon,51.3629,-0.0933
+South Greenford50,Ealing,Great Western Railway,SGN,4,1903,F,51.5342 -0.3369,Greenford,51.5342,-0.3369
+South Hampstead51,Camden,London Overground,SOH,2,1879,E,51.5414 -0.1788,South Hampstead,51.5414,-0.1788
+South Kenton,Brent,London Underground,SOK,4,1933,E,51.5703 -0.3086,South Kenton,51.5703,-0.3086
+South Merton,Merton,Thameslink,SMO,4,1930,F,51.4030 -0.2062,Morden,51.403,-0.2062
+South Ruislip,Hillingdon,Chiltern Railways,SRU,5,1908,F,51.5569 -0.3988,South Ruislip,51.5569,-0.3988
+South Tottenham,Haringey,London Overground,STO,3,1871,E,51.5802 -0.0720,South Tottenham,51.5802,-0.0720
+Stamford Hill,Haringey,London Overground,SMH,3,1872,E,51.5749 -0.0761,Stamford Hill,51.5749,-0.0761
+Stoke Newington22,Hackney,London Overground,SKW,2,1872,E,51.5651 -0.0727,Stoke Newington,51.5651,-0.0727
+Stonebridge Park,Brent,London Underground,SBP,3,1912,D,51.5440 -0.2754,Tokyngton,51.544,-0.2754
+Stoneleigh,Epsom and Ewellout-boundary,South Western Railway,SNL,5,1932,C,51.3637 -0.2487,Stoneleigh,51.3637,-0.2487
+Stratford,Newham,Elizabeth line,SRA,23,1839,B,51.5417 -0.0037,Stratford,51.5417,-0.0037
+Stratford International,Newham,Southeastern,SFA,nan,2009,unlisted,51.5448 -0.0087,Stratford,51.5448,-0.0087
+Strawberry Hill52,Richmond upon Thames,South Western Railway,STW,5,1873,C,51.4389 -0.3388,Strawberry Hill,51.4389,-0.3388
+Streatham12,Lambeth,Southern,STE,3,1856,D,51.4260 -0.1311,Streatham,51.426,-0.1311
+Streatham Common12,Lambeth,Southern,SRC,3,1862,C,51.4187 -0.1359,Streatham Common,51.4187,-0.1359
+Streatham Hill53,Lambeth,Southern,SRH,3,1856,C,51.4380 -0.1271,Streatham,51.438,-0.1271
+Sudbury  Harrow Road54,Brent,Chiltern Railways,SUD,4,1910,F,51.5540 -0.3167,Sudbury,51.554,-0.3167
+Sudbury Hill Harrow54,Harrow,Chiltern Railways,SDH,4,1910,F,51.5589 -0.3358,Harrow on the hill,51.5589,-0.3358
+Sundridge Park55,Bromley,Southeastern,SUP,4,1878,E,51.4137 0.0221,Sundridge Park,51.4137,0.0221
+Surbiton,Kingston upon Thames,South Western Railway,SUR,6,1838,B,51.3926 -0.3044,Surbiton,51.3926,-0.3044
+Surrey Quays,Southwark,London Overground,SQE,2,1884,unlisted,51.4933 -0.0477,Surrey Quays,51.4933,-0.0477
+Sutton56,Sutton,Southern,SUO,5,1847,C,51.3601 -0.1903,Sutton,51.3601,-0.1903
+Sutton Common,Sutton,Thameslink,SUC,4,1930,F,51.3751 -0.1964,Sutton,51.3751,-0.1964
+Sydenham,Lewisham,London Overground,SYD,3,1839,D,51.4268 -0.0545,Sydenham,51.4268,-0.0545
+Sydenham Hill,Southwark,Southeastern,SYH,3,1862,E,51.4326 -0.0802,Sydenham Hill,51.4326,-0.0802
+Syon Lane57,Hounslow,South Western Railway,SYL,4,1925,F,51.4818 -0.3248,Isleworth,51.4818,-0.3248
+Tadworth,Reigate and Bansteadout-boundary,Southern,TAD,6,1900,E,51.2920 -0.2360,Tadworth,51.292,-0.2360
+Tattenham Corner,Reigate and Bansteadout-boundary,Southern,TAT,6,1901,E,51.3092 -0.2426,Tattenham Corner,51.3092,-0.2426
+Teddington,Richmond upon Thames,South Western Railway,TED,6,1864,C,51.4247 -0.3325,Teddington,51.4247,-0.3325
+Thames Ditton,Elmbridgeout-boundary,South Western Railway,THD,6,1849,D,51.3886 -0.3383,Thames Ditton,51.3886,-0.3383
+Thornton Heath,Croydon,Southern,TTH,4,1862,C,51.3985 -0.1004,Thornton Heath,51.3985,-0.1004
+Tolworth,Kingston upon Thames,South Western Railway,TOL,5,1938,E,51.3771 -0.2793,Tolworth,51.3771,-0.2793
+Tooting58,Merton,Thameslink,TOO,3,1868,E,51.4196 -0.1603,Tooting,51.4196,-0.1603
+Tottenham Court Road,Camden,Elizabeth line,TCR,1,2022,unlisted,51.5162 -0.1309,St Giles,51.5162,-0.1309
+Tottenham Hale,Haringey,Greater Anglia,TOM,3,1840,D,51.5902 -0.0611,Tottenham Hale,51.5902,-0.0611
+Tulse Hill12,Lambeth,Southern,TUH,3,1868,D,51.4399 -0.1049,Tulse Hill,51.4399,-0.1049
+Turkey Street59,Enfield,London Overground,TUR,6,1891,E,51.6725 -0.0474,Bullsmoor,51.6725,-0.0474
+Twickenham60,Richmond upon Thames,South Western Railway,TWI,5,1848,C,51.4504 -0.3296,Twickenham,51.4504,-0.3296
+Upminster,Havering,c2c,UPM,6,1885,C,51.5588 0.2509,Upminster,51.5588,0.2509
+Upper Holloway,Islington,London Overground,UHL,2,1868,E,51.5638 -0.1298,Upper Holloway,51.5638,-0.1298
+Upper Warlingham,Tandridgeout-boundary,Southern,UWL,6,1884,D,51.3085 -0.0780,Whyteleafe,51.3085,-0.0780
+VauxhallLondon,Lambeth,South Western Railway,VXH,12,1848,B,51.4859 -0.1229,Vauxhall,51.4859,-0.1229
+VictoriaLondon,Westminster,Network Rail,VIC,1,1862,A,51.4966 -0.1448,Belgravia,51.4966,-0.1448
+Waddon,Croydon,Southern,WDO,5,1847,D,51.3674 -0.1170,Waddon,51.3674,-0.1170
+Wallington,Sutton,Southern,WLT,5,1847,C,51.3592 -0.1533,Wallington,51.3592,-0.1533
+Walthamstow Central,Waltham Forest,London Overground,WHC,3,1869,C,51.5831 -0.0192,Walthamstow,51.5831,-0.0192
+Walthamstow Queens Road,Waltham Forest,London Overground,WMW,3,1894,E,51.5817 -0.0240,Walthamstow,51.5817,-0.0240
+Wandsworth Common61,Wandsworth,Southern,WSW,3,1895,D,51.4464 -0.1635,Wandsworth,51.4464,-0.1635
+Wandsworth Road,Lambeth,London Overground,WWR,2,1863,F,51.4702 -0.1390,Clapham,51.4702,-0.1390
+Wandsworth Town12,Wandsworth,South Western Railway,WNT,2,1846,C,51.4610 -0.1879,Wandsworth,51.461,-0.1879
+Wanstead Park,Newham,London Overground,WNP,3,1894,E,51.5518 0.0264,Forest Gate,51.5518,0.0264
+Wapping,Tower Hamlets,London Overground,WPE,2,1869,unlisted,51.5044 -0.0558,Wapping,51.5044,-0.0558
+WaterlooLondon,Lambeth,Network Rail,WAT,1,1848,A,51.5031 -0.1132,Waterloo,51.5031,-0.1132
+Waterloo EastLondon,Lambeth,Southeastern,WAE,1,1869,B,51.5041 -0.1101,Waterloo,51.5041,-0.1101
+Welling,Bexley,Southeastern,WLI,4,1895,C,51.4647 0.1017,Welling,51.4647,0.1017
+Wembley Central2862,Brent,London Underground,WMB,4,1842,C,51.5519 -0.2964,Wembley,51.5519,-0.2964
+Wembley Stadium,Brent,Chiltern Railways,WCX,4,1906,F,51.5543 -0.2863,Wembley,51.5543,-0.2863
+West Brompton,Kensington and Chelsea,London Underground,WBP,2,1869,E,51.4866 -0.1957,West Brompton,51.4866,-0.1957
+Westcombe Park63,Greenwich,Southeastern,WCB,3,1879,D,51.4842 0.0187,Westcombe Park,51.4842,0.0187
+West Croydon,Croydon,London Overground,WCY,5,1839,C,51.3785 -0.1020,Croydon,51.3785,-0.1020
+West Drayton64,Hillingdon,Elizabeth line,WDT,6,1838,E,51.5101 -0.4719,West Drayton,51.5101,-0.4719
+West Dulwich,Southwark,Southeastern,WDU,3,1862,E,51.4409 -0.0906,Dulwich,51.4409,-0.0906
+West Ealing,Ealing,Elizabeth line,WEA,3,1871,E,51.5137 -0.3203,West Ealing,51.5137,-0.3203
+West Ham,Newham,London Underground,WEH,3,1901,C,51.5284 0.0066,West Ham,51.5284,0.0066
+West Hampstead,Camden,London Overground,WHD,2,1888,D,51.5473 -0.1913,West Hampstead,51.5473,-0.1913
+West Hampstead Thameslink,Camden,Thameslink,WHP,2,1871,E,51.5485 -0.1918,West Hampstead,51.5485,-0.1918
+West Norwood12,Lambeth,Southern,WNW,3,1856,D,51.4318 -0.1035,West Norwood,51.4318,-0.1035
+West Ruislip,Hillingdon,Chiltern Railways,WRU,6,1906,F,51.5696 -0.4376,Ruislip,51.5696,-0.4376
+West Sutton,Sutton,Thameslink,WSU,5,1930,E,51.3662 -0.2051,Sutton,51.3662,-0.2051
+West Wickham,Bromley,Southeastern,WWI,5,1882,D,51.3813 -0.0145,West Wickham,51.3813,-0.0145
+Whitechapel,Tower Hamlets,London Underground,ZLW,2,1876,unlisted,51.5190 -0.0610,Whitechapel,51.519,-0.0610
+White Hart Lane,Haringey,London Overground,WHL,3,1872,E,51.6049 -0.0711,Tottenham,51.6049,-0.0711
+Whitton,Richmond upon Thames,South Western Railway,WTN,5,1930,C,51.4495 -0.3578,Whitton,51.4495,-0.3578
+Whyteleafe,Tandridgeout-boundary,Southern,WHY,6,1900,E,51.3097 -0.0811,Whyteleafe,51.3097,-0.0811
+Whyteleafe South,Tandridgeout-boundary,Southern,WHS,6,1856,E,51.3034 -0.0768,Whyteleafe,51.3034,-0.0768
+Willesden Junction,Brent,London Overground,WIJ,23,1866,C,51.5324 -0.2439,Harlesden,51.5324,-0.2439
+Wimbledon,Merton,South Western Railway,WIM,3,1838,B,51.4232 -0.2043,Wimbledon,51.4232,-0.2043
+Wimbledon Chase,Merton,Thameslink,WBO,3,1930,F,51.4095 -0.2142,Wimbledon,51.4095,-0.2142
+Winchmore Hill,Enfield,Great Northern,WIH,4,1871,D,51.6341 -0.1013,Winchmore Hill,51.6341,-0.1013
+Woodgrange Park,Newham,London Overground,WGR,34,1894,E,51.5487 0.0454,Manor Park,51.5487,0.0454
+Woodmansterne,Croydon,Southern,WME,6,1904,E,51.3192 -0.1539,Coulsdon,51.3192,-0.1539
+Wood Street48,Waltham Forest,London Overground,WST,4,1873,D,51.5864 -0.0021,Walthamstow,51.5864,-0.0021
+Woolwich,Greenwich,Elizabeth line,WWC,4,2022,unlisted,51.4916 0.0718,Woolwich,51.4916,0.0718
+Woolwich Arsenal,Greenwich,Southeastern,WWA,4,1849,C,51.4898 0.0694,Woolwich,51.4898,0.0694
+Woolwich Dockyard65,Greenwich,Southeastern,WWD,3,1849,E,51.4913 0.0536,Woolwich,51.4913,0.0536
+Worcester Park66,Sutton,South Western Railway,WCP,4,1859,C,51.3804 -0.2412,Worcester Park,51.3804,-0.2412

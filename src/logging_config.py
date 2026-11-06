@@ -1,5 +1,7 @@
 import os
 import logging
+import copy
+import re
 from logging.handlers import RotatingFileHandler
 
 # Define log file paths
@@ -7,6 +9,20 @@ MONITOR_LOG = os.path.join('logs', 'bnb_analyzer.log')
 
 # Logging configuration
 MAX_LOG_LINE_LENGTH = 200  # Configurable maximum length for log messages
+
+_SECRET_PATTERNS = (
+    (re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._~+/=-]+"), "Bearer [REDACTED]"),
+    (re.compile(r"\bsk-(?:proj-)?[A-Za-z0-9_-]{12,}\b"), "[REDACTED_API_KEY]"),
+    (re.compile(r"\bAIza[0-9A-Za-z_-]{20,}\b"), "[REDACTED_API_KEY]"),
+    (re.compile(r"(?i)\b(api[_-]?key|access[_-]?token|password|secret)\s*([=:]\s*)['\"]?[^\s,;'\"]+"), r"\1\2[REDACTED]"),
+)
+
+
+def _redact_credentials(value):
+    text = str(value)
+    for pattern, replacement in _SECRET_PATTERNS:
+        text = pattern.sub(replacement, text)
+    return text
 
 class TruncatingFormatter(logging.Formatter):
     """Custom formatter that truncates messages that are too long."""
@@ -16,7 +32,7 @@ class TruncatingFormatter(logging.Formatter):
 
     def format(self, record):
         # First, format the message as normal
-        message = super().format(record)
+        message = _redact_credentials(super().format(record))
         
         # If message is too long, truncate it and add an indicator
         if len(message) > self.max_length:
@@ -24,6 +40,27 @@ class TruncatingFormatter(logging.Formatter):
             message = message[:truncated_length] + '...'
         
         return message
+
+
+class ExceptionPreservingFormatter(TruncatingFormatter):
+    """Truncate routine text while retaining and sanitizing the full traceback."""
+
+    def format(self, record):
+        if not record.exc_info:
+            return super().format(record)
+
+        # The standard formatter appends the entire traceback. Truncate only
+        # the log message, then preserve all traceback frames for diagnosis.
+        clone = copy.copy(record)
+        message = record.getMessage()
+        if len(message) > self.max_length:
+            message = message[: self.max_length - 3] + "..."
+        clone.msg = _redact_credentials(message)
+        clone.args = ()
+        clone.message = None
+        clone.exc_text = None
+        formatted = logging.Formatter.format(self, clone)
+        return _redact_credentials(formatted)
 
 def setup_logger(name, log_file, level=logging.INFO):
     """Set up a logger with rotating file handler.
@@ -40,7 +77,7 @@ def setup_logger(name, log_file, level=logging.INFO):
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
     
     # Create formatters with filename included
-    file_formatter = TruncatingFormatter(
+    file_formatter = ExceptionPreservingFormatter(
         '%(asctime)s - [%(filename)s] - %(levelname)s - %(message)s'
     )
     console_formatter = TruncatingFormatter(
@@ -67,7 +104,12 @@ def setup_logger(name, log_file, level=logging.INFO):
     logger.setLevel(level)
     
     # Remove existing handlers to avoid duplicates
-    logger.handlers = []
+    for old_handler in logger.handlers[:]:
+        logger.removeHandler(old_handler)
+        try:
+            old_handler.close()
+        except Exception:
+            pass
     
     # Add handlers
     logger.addHandler(file_handler)

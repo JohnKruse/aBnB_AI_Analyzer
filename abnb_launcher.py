@@ -217,7 +217,7 @@ class AbnbLauncher:
         # Run review_app.py
         logger.info("Running review_app.py")
         try:
-            subprocess.run(["streamlit", "run", str(PROJECT_ROOT / "review_app.py")], check=True)
+            subprocess.run([sys.executable, "-m", "streamlit", "run", str(PROJECT_ROOT / "review_app.py")], check=True)
             logger.info("review_app.py completed successfully")
             print("review_app.py completed successfully.")
         except subprocess.CalledProcessError as e:

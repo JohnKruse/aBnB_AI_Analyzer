@@ -146,3 +146,31 @@ def test_filter_by_capacity_large(sample_merged_df):
     """Test filtering by capacity with large number of guests."""
     filtered_df = filter_by_capacity(sample_merged_df, 100)
     assert len(filtered_df) == 0
+
+
+def test_snapshot_loader_can_defer_enrichment_for_cached_browser(monkeypatch, tmp_path):
+    import review_app
+    from src import search_service
+
+    output = tmp_path / "searches" / "sample" / "output_data"
+    output.mkdir(parents=True)
+    pd.DataFrame([{
+        "room_id": "001", "room_type": "Private room",
+        "coordinates": "{'latitude': 45.0, 'longitud': 7.0}",
+    }]).to_csv(output / "merged_df.csv", index=False)
+    monkeypatch.setattr(search_service, "SEARCHES_ROOT", tmp_path / "searches")
+    calls = []
+
+    def enrich(frame, **kwargs):
+        calls.append(True)
+        return frame.assign(accommodation_type="Private room")
+
+    monkeypatch.setattr(review_app, "enrich_properties_dataframe", enrich)
+    raw = review_app.load_search_dataset("sample", enrich=False)
+    assert calls == []
+    assert raw.iloc[0]["room_id"] == "001"
+    assert raw.iloc[0]["longitude"] == 7.0
+    assert "accommodation_type" not in raw
+    prepared = review_app.load_search_dataset("sample")
+    assert len(calls) == 1
+    assert prepared.iloc[0]["accommodation_type"] == "Private room"

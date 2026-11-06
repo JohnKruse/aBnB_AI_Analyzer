@@ -1,79 +1,89 @@
 # Contributing to BnB AI Analyzer
 
-Thank you for your interest in contributing to BnB AI Analyzer! This document provides guidelines and instructions for contributing to the project.
+Read the [README](README.md), [architecture](docs/retooling_plan.md) and
+[storage lifecycle](docs/sqlite_storage.md) before changing the app. Preserve
+existing work in the checkout; avoid mixing unrelated changes into a fix.
 
-## Code Style
+## Development environment
 
-- Follow PEP 8 style guidelines for Python code
-- Use meaningful variable and function names
-- Add docstrings to all functions and classes
-- Keep functions focused and single-purpose
-- Use type hints where appropriate
-- Include comments for complex logic
+Use Python 3.12 and the focused `requirements-app.txt` runtime. `bash launch.sh`
+creates/checks the local environment and launches Streamlit. Historical desktop
+and notebook dependencies remain in separate manifests.
 
-## Important Naming Convention
+For the test suite, install pytest into that environment and run:
 
-- Always use "abnb" instead of the original name throughout the codebase
-- This applies to:
-  - Variable names
-  - Function names
-  - Comments
-  - Documentation
-  - String literals
-
-## Development Process
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests if available
-5. Update documentation as needed
-6. Commit your changes (see commit message guidelines below)
-7. Push to your fork
-8. Open a Pull Request
-
-## Commit Message Guidelines
-
-Follow these conventions for commit messages:
-
-```
-type(scope): Brief description
-
-Detailed description of changes if needed
+```bash
+.venv/bin/python -m pip install pytest
+.venv/bin/python -m pytest -q
 ```
 
-Types:
-- feat: New feature
-- fix: Bug fix
-- docs: Documentation changes
-- style: Code style changes (formatting, missing semi-colons, etc)
-- refactor: Code changes that neither fix bugs nor add features
-- test: Adding or modifying tests
-- chore: Changes to build process or auxiliary tools
+Node.js is needed for the real-JavaScript map lifecycle checks. Those checks skip
+when it is unavailable. A skipped check must not be presented as verified browser
+behavior. No live Airbnb request, geocoding call or paid model call belongs in an
+ordinary unit-test dependency.
 
-## Pull Request Process
+## Change design
 
-1. Update the README.md if your changes add new features or modify existing ones
-2. Update documentation in the docs/ directory if needed
-3. Ensure your code follows the project's code style
-4. Make sure all tests pass
-5. Update the CHANGELOG.md if applicable
-6. Request review from maintainers
+- Keep Streamlit as a caller of services. Workers must not call Streamlit APIs.
+- Use temporary workspaces and injected providers in tests; never modify a user's
+  saved searches as a test fixture.
+- Keep current quote context, reusable property facts and personal AI evidence
+  separate. Reusing a record must not reset its original fetch timestamp.
+- Keep per-property success checkpoints and finite retry limits. Shared rate
+  limits require cooldowns; invalid evidence citations must never become scores.
+- Keep the area map's initialization script stable while a user pans/zooms.
+  Use dynamic layers for boundary changes, not viewport-resetting remounts.
+- Respect the four-step UI and shared button colors: teal primary, blue secondary,
+  red destructive, gray disabled. Keep update actions with their owning stage.
+- Preserve the legacy `abnb_*` entry-point names. Existing provider/service names
+  use `airbnb`; there is no blanket requirement to rename those APIs or strings.
+- Prefer focused functions, meaningful names, type annotations where useful and
+  comments that explain non-obvious behavior. Run checks appropriate to the change.
 
-## File Organization
+## Source and runtime data
 
-- Keep the project structure organized as outlined in README.md
-- Place new search-related files in the `searches/` directory
-- Store overlay files in the `overlays/` directory
-- Add new configuration templates to the `templates/` directory
-- Place documentation in the `docs/` directory
+Application code belongs under `src/`; tests under `tests/`; maintained docs under
+`docs/`. Search workspaces and shared runtime stores live under `searches/` and
+are not source files. The shared property database must not be replaced by an
+ancestor `analyzer.sqlite3`.
 
-## Questions or Problems?
+Never commit `.env` files, credentials, search snapshots, generated reports,
+SQLite files, logs or personal notebook outputs. The two bundled London station
+CSVs are deliberate exceptions to the broad CSV ignore rule; custom/private
+CSV overlays remain local unless deliberately reviewed for publication.
 
-- Open an issue for bugs or feature requests
-- Tag issues appropriately
-- Provide as much relevant information as possible
+Review `git status` and the proposed diff before committing. Publishing code is
+separate from publishing private runtime data.
 
-## License
+## Pull requests and documentation
 
-By contributing to BnB AI Analyzer, you agree that your contributions will be licensed under the same license as the project (see LICENSE file).
+Describe the concrete resulting behavior, its reason, relevant tests and material
+limits. Update user-facing controls/examples when names or flow change. Keep
+verification dates/counts in the [status document](docs/browser_revamp_status.md)
+and distinguish offline test evidence from live-provider/browser checks.
+
+Use a focused commit message, for example:
+
+```text
+fix(evaluation): retry rejected answers after the remaining listings
+```
+
+The old [feasibility brief](docs/flash_stage0_brief.md) is archived, not a current
+implementation task. Do not describe shipped features as future work in it.
+
+## Diagnostics
+
+Application logs go to `logs/bnb_analyzer.log`, with rotated copies. Unexpected
+browser exceptions include redacted tracebacks. Background job progress and
+errors live under each search's `jobs/` directory. Do not paste credentials or
+full personal provider payloads into issue reports.
+
+```bash
+tail -f logs/bnb_analyzer.log
+```
+
+A useful bug report includes the action, displayed status/error, relevant saved
+trip/selection context and whether it reproduces with a small temporary fixture.
+Map gesture/render defects need an actual browser check in addition to AppTest.
+
+Contributions use the repository's existing [license](LICENSE).

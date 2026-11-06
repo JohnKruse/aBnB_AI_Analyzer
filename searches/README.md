@@ -1,1 +1,0 @@
-You can remove a search from this directory by deleting its corresponding subdirectory.

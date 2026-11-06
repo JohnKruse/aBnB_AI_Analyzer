@@ -29,6 +29,9 @@ logs/
 *.log
 
 # Data files
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
 *.csv
 *.json
 *.xlsx
@@ -42,3 +45,10 @@ local_settings.yaml
 # Backups
 *.zip
 *.bak
+
+# Bundled public London station overlays used by the maps
+!overlays/LondonTubeStops.csv
+!overlays/LondonRailStations.csv
+
+# Local troubleshooting notebook (may contain saved outputs)
+debug_airbnb.ipynb

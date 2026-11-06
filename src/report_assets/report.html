@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Property report</title><style>/* REPORT_CSS */</style></head>
+<body>
+<header>
+  <div class="heading"><div><p class="eyebrow">AIRBNB ANALYZER · PROPERTY REPORT</p><h1 id="report-title"></h1></div><button id="save-copy">↓ Save reviewed copy</button></div>
+  <p id="created" class="muted"></p><p id="trip"></p><p id="provenance" class="muted"></p>
+  <p class="muted">A saved snapshot. Prices and availability can change; check Airbnb before booking. Favorites and notes travel with a saved reviewed copy.</p>
+</header>
+<section class="filters" aria-label="Property filters">
+  <label>Search<input id="query" type="search" placeholder="Name, description, reviews"></label>
+  <label>Maximum stay cost<input id="max-price" type="number" min="0" step="50" placeholder="No maximum"></label>
+  <label>Minimum guests<input id="capacity" type="number" min="0" step="1" value="0"></label>
+  <label>Minimum beds<input id="beds" type="number" min="0" step="1" value="0"></label>
+  <label>Minimum bedrooms<input id="bedrooms" type="number" min="0" step="1" value="0"></label>
+  <label>Minimum Airbnb rating<input id="rating" type="number" min="0" max="5" step="0.1" value="0"></label>
+  <label>Home type<select id="home"><option value="">Any</option></select></label>
+  <label>Bathroom<select id="bath"><option value="">Any</option><option value="exclusive">Exclusive use</option><option value="ensuite">Ensuite only</option><option value="shared">Shared</option></select></label>
+  <label>Air conditioning<select id="ac"><option value="">Any</option><option value="present">Confirmed present</option><option value="not_absent">Present or unknown</option></select></label>
+  <label>Washer<select id="washer"><option value="">Any</option><option value="present">Confirmed present</option><option value="not_absent">Present or unknown</option></select></label>
+  <label>Show<select id="limit"><option value="0">All matches</option><option value="10">Top 10</option><option value="20">Top 20</option><option value="30">Top 30</option><option value="50">Top 50</option></select></label>
+  <label class="check"><input id="favorites-only" type="checkbox">Favorites only</label>
+  <label>Cancellation<select id="cancellation"><option value="">Any terms</option><option value="free">Confirmed free cancellation</option><option value="conditional">Conditional</option><option value="not_free">Not free</option><option value="nonrefundable">Non-refundable</option><option value="unknown">Unknown</option><option value="conflict">Conflicting evidence</option></select></label>
+  <label class="check"><input id="unknown-prices" type="checkbox">Include unknown / stale prices</label>
+  <label class="check"><input id="unavailable" type="checkbox">Include unavailable / not returned</label>
+  <button id="reset">Reset filters</button>
+</section>
+<div class="results-bar"><p id="count" aria-live="polite"></p><span class="muted">Click a column heading to sort. Check one property or click its map marker for details.</span></div>
+<main>
+  <section class="panel grid-panel" aria-label="Property grid"><div class="table-scroll"><table><thead><tr id="columns"></tr></thead><tbody id="rows"></tbody></table></div></section>
+  <section class="panel map-panel" aria-label="Property map">
+    <div class="map-toolbar"><strong>Map</strong><label class="check"><input id="street-map" type="checkbox" checked>Quiet background (internet)</label><button id="fit-map">Fit results</button><button id="zoom-in" aria-label="Zoom in">+</button><button id="zoom-out" aria-label="Zoom out">−</button></div>
+    <div id="map" tabindex="0" aria-label="Property locations; drag to pan, use plus and minus to zoom"><div id="tiles"></div><div id="stations" aria-label="Train and Tube stations"></div><div id="markers"></div><span class="attribution">Tiles © <a href="https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer" target="_blank" rel="noopener noreferrer">Esri</a> · Esri, HERE, Garmin, USGS, Intermap, INCREMENT P, NRCan, Esri Japan, METI, Esri China (Hong Kong), NOSTRA, © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors, GIS User Community</span></div>
+    <p id="map-status" class="muted"></p>
+  </section>
+  <section id="details" class="panel details" aria-label="Selected property details"><p>Check a property in the grid to see its details here.</p></section>
+</main>
+<footer>Everything needed to filter, sort and read the report is included in this file. Street-map tiles and Airbnb links require internet. Marker positions are approximate.</footer>
+<script id="report-data" type="application/json">REPORT_PAYLOAD</script>
+<script>/* REPORT_JS */</script>
+</body></html>

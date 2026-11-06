@@ -313,7 +313,7 @@ class LauncherUI:
             
             # Run streamlit in a separate process
             subprocess.Popen(
-                ["streamlit", "run", str(review_app_path)],
+                [sys.executable, "-m", "streamlit", "run", str(review_app_path)],
                 cwd=str(self.project_root)
             )
             

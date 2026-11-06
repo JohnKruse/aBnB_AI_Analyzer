@@ -8,7 +8,7 @@ dependencies:
   - wheel
   - pip:
       - aiofiles==24.1.0
-      - airbnb==2.3.2
+      - pyairbnb==2.2.2
       - altair==4.2.2
       - annotated-types==0.7.0
       - attrs==24.2.0
@@ -58,6 +58,7 @@ dependencies:
       - nipype==1.8.6
       - numpy==2.1.1
       - openai==1.47.1
+      - pandas>=2.2.0
       - pathlib==1.0.1
       - pillow==10.4.0
       - pluggy==1.5.0
@@ -80,6 +81,7 @@ dependencies:
       - python-dateutil==2.9.0.post0
       - python-decouple==3.8
       - pyxnat==1.6.2
+      - pyyaml>=6.0.1
       - rdflib==6.3.2
       - referencing==0.35.1
       - rpds-py==0.20.0
