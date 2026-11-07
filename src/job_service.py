@@ -29,6 +29,9 @@ _THREAD_LOCK = threading.RLock()
 _FUTURES: Dict[str, Future] = {}
 _CANCEL_EVENTS: Dict[str, threading.Event] = {}
 
+COLLECTION_RETRY_WAIT_SECONDS = 300
+COLLECTION_RESUME_DELAY_SECONDS = 30
+
 ALLOWED_STAGES = {"discover", "details", "refresh", "evaluate", "collect_and_evaluate", "prepare"}
 
 
@@ -214,14 +217,15 @@ def _resume_collection(initial, collect, policy, checkpoint):
     skipped = set(result.get('skipped_budget_room_ids', []))
     rounds = 0
     for round_index in range(policy.options.get('max_resume_rounds', 2)):
-        if any(f.get('status_code') == 429 and f.get('retryable') is False for f in failures.values()):
+        if any(f.get('status_code') in {401, 403} or
+               (f.get('status_code') == 429 and f.get('retryable') is False) for f in failures.values()):
             break
         retry_ids = sorted(pending | {f['room_id'] for f in failures.values() if f.get('retryable')})
         if not retry_ids or result.get('status') == 'cancelled':
             break
         # Checkpoints are review/detail specific: a retry does not redownload
         # successful components, even for a property that only partly completed.
-        delay = max(300 * 2**round_index, policy.cooldown_remaining())
+        delay = max(COLLECTION_RESUME_DELAY_SECONDS * 2**round_index, policy.cooldown_remaining())
         checkpoint(result, {'round': round_index+1, 'room_ids': retry_ids,
                             'cooldown_seconds': delay, 'state': 'waiting'})
         if not policy.wait_retry(delay, f'Automatic collection resume {round_index+1}/2; {len(retry_ids)} remaining listings'):
@@ -255,7 +259,7 @@ def _resume_collection(initial, collect, policy, checkpoint):
     result['retry_waited_seconds'] = policy.retry_waited_seconds
     result['retry_budget_seconds'] = policy.retry_budget_seconds
     result['retry_stop_reason'] = policy.retry_stop_reason
-    if result.get('status') in {'partial', 'failed'}:
+    if result.get('status') in {'partial', 'failed'} and not any(f.get('status_code') in {401, 403} for f in failures.values()):
         result['message'] = policy.retry_stop_reason or 'Automatic retries finished; remaining failures are saved for manual resume.'
     elif result.get('status') == 'success' and rounds:
         result['message'] = 'Collection completed after automatic resume.'
@@ -310,6 +314,8 @@ def _worker(search_name: str, manifest: Dict[str, Any]) -> None:
         def run_details(refresh: bool = False) -> Dict[str, Any]:
             manifest["current_stage"] = "refresh" if refresh else "details"
             _write_manifest(search_name, manifest)
+            if policy:
+                policy.retry_budget_seconds = COLLECTION_RETRY_WAIT_SECONDS
             result = collect_details_and_reviews(
                 search_name,
                 refresh_quotes=refresh,
@@ -318,7 +324,6 @@ def _worker(search_name: str, manifest: Dict[str, Any]) -> None:
                 **({"request_policy": policy} if policy else {}),
             )
             if policy:
-                policy.retry_budget_seconds = min(3600, max(policy.retry_budget_seconds, int(result.get('total', 0))*60))
                 def retry_checkpoint(aggregate, retry_state):
                     manifest['collection_retry'] = dict(retry_state,
                         waited_seconds=policy.retry_waited_seconds,
@@ -348,15 +353,19 @@ def _worker(search_name: str, manifest: Dict[str, Any]) -> None:
             return result
 
         def run_evaluation() -> Dict[str, Any]:
+            nonlocal policy
             from .evaluation_service import run_personalized_evaluation
             from .pipeline_status import get_pipeline_status
             manifest["current_stage"] = "evaluate"
             status_snapshot = get_pipeline_status(search_name, manifest.get("profile_name", "Default"))
             manifest["eligible_room_ids"] = list(status_snapshot.get("eligible_room_ids", []))
+            collection = manifest["stage_results"].get("details", {})
+            excluded = set(collection.get("failed_room_ids", [])) | set(collection.get("unattempted_room_ids", [])) | set(collection.get("skipped_budget_room_ids", []))
+            manifest["eligible_room_ids"] = [rid for rid in manifest["eligible_room_ids"] if rid not in excluded]
             if policy:
-                collection = manifest.get('stage_results', {}).get('details', {})
-                excluded = set(collection.get('failed_room_ids', [])) | set(collection.get('unattempted_room_ids', [])) | set(collection.get('skipped_budget_room_ids', []))
-                manifest['eligible_room_ids'] = [rid for rid in manifest['eligible_room_ids'] if rid not in excluded]
+                # Airbnb cooldowns and retry time must not consume the AI stage's budget.
+                policy = RequestPolicy(manifest["run_options"], should_cancel, report_wait,
+                                       property_count=len(manifest["eligible_room_ids"]))
             _write_manifest(search_name, manifest)
             result = run_personalized_evaluation(
                 search_name,
@@ -406,22 +415,25 @@ def _worker(search_name: str, manifest: Dict[str, Any]) -> None:
                 detail_status = results["details"].get("status")
                 if should_cancel() or detail_status == "cancelled":
                     manifest["status"] = "cancelled"
-                elif policy and detail_status in {"partial", "failed"}:
-                    # Evaluate the successfully collected subset; failed listings
-                    # remain explicit and can be resumed without paying twice.
-                    results["evaluate"] = run_evaluation()
-                    manifest['status'] = 'partial'
-                    manifest['message'] = results['details'].get('message') or 'Finished available listings; remaining failures are saved for manual resume.'
+                elif detail_status in {"partial", "failed"}:
+                    from .pipeline_status import get_pipeline_status
+                    ready = get_pipeline_status(search_name, manifest["profile_name"]).get("eligible_room_ids", [])
+                    if ready:
+                        results["evaluate"] = run_evaluation()
+                    manifest["status"] = "partial" if ready or detail_status == "partial" else "failed"
+                    manifest["message"] = ("Collection stopped with some listings pending. "
+                                           + ("Continued with the ready listings. " if ready else "")
+                                           + "Retry preparation to resume missing work.")
                 elif detail_status != "success":
-                    manifest["status"] = "failed" if detail_status == "failed" else "partial"
-                    manifest["message"] = "Evaluation was not started because details/reviews collection did not complete. Retry collection to finish the pipeline."
+                    manifest["status"] = "failed"
+                    manifest["message"] = "Collection could not start. Check the saved stage status and retry preparation."
                 else:
                     results["evaluate"] = run_evaluation()
         child_statuses = [value.get("status") for value in results.values() if isinstance(value, dict)]
-        if manifest.get("status") in {"failed", "partial", "cancelled", "no_matches"}:
-            pass
-        elif should_cancel() or "cancelled" in child_statuses:
+        if should_cancel() or "cancelled" in child_statuses:
             manifest["status"] = "cancelled"
+        elif manifest.get("status") in {"failed", "partial", "cancelled", "no_matches"}:
+            pass
         elif child_statuses and all(status == "no_matches" for status in child_statuses):
             manifest["status"] = "no_matches"
         elif any(status == "no_candidates" for status in child_statuses):
@@ -472,11 +484,8 @@ def _validate_job_prerequisites(search_name: str, stage: str, profile_name: str)
         if int(discovered.get("count", 0)) <= 0:
             raise PipelinePrerequisiteError("Discover current listings before collecting details or evaluating.")
         if stage == "evaluate":
-            details = status["stages"]["details"]
-            if details.get("state") != "success":
-                raise PipelinePrerequisiteError("Complete current details and reviews collection before evaluating listings.")
             if not status.get("eligible_room_ids"):
-                raise PipelinePrerequisiteError("No available listings are eligible for evaluation.")
+                raise PipelinePrerequisiteError("At least one available listing needs saved details and a reviews checkpoint before evaluation.")
             weights = (profile or {}).get("weights", {})
             if not any(int(weight) > 0 for weight in weights.values()):
                 raise PipelinePrerequisiteError("Give at least one personal-priority criterion a nonzero weight before evaluation.")

@@ -8,7 +8,8 @@ from typing import Any, Mapping
 from urllib.parse import quote, urlencode
 
 import pandas as pd
-from .transit_service import saved_london_stations
+from .branding import github_logo_link
+from .transit_service import STATION_ASSETS, saved_london_stations
 
 ASSETS = Path(__file__).with_name("report_assets")
 
@@ -58,4 +59,11 @@ def build_property_report(
     }
     encoded = json.dumps(payload, ensure_ascii=False, allow_nan=False).replace("<", "\\u003c").replace("\u2028", "\\u2028").replace("\u2029", "\\u2029")
     template = (ASSETS / "report.html").read_text(encoding="utf-8")
-    return template.replace("/* REPORT_CSS */", (ASSETS / "report.css").read_text(encoding="utf-8")).replace("/* REPORT_JS */", (ASSETS / "report.js").read_text(encoding="utf-8")).replace("REPORT_PAYLOAD", encoded)
+    css = (ASSETS / "report.css").read_text(encoding="utf-8")
+    css += "\n" + (STATION_ASSETS / "station_labels.css").read_text(encoding="utf-8")
+    script = (STATION_ASSETS / "station_labels.js").read_text(encoding="utf-8")
+    script += "\n" + (ASSETS / "report.js").read_text(encoding="utf-8")
+    return (template.replace("/* REPORT_CSS */", css)
+            .replace("/* REPORT_JS */", script)
+            .replace("<!-- PROJECT_LOGO -->", github_logo_link())
+            .replace("REPORT_PAYLOAD", encoded))

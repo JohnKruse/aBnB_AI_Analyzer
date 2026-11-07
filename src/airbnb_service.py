@@ -820,8 +820,9 @@ def collect_details_and_reviews(
     completed = 0
     attempted_room_ids: List[str] = []
     rate_limited = False
+    access_denied = False
+    stopped_index = None
     budget_skipped_ids = []
-    rate_limited_index: Optional[int] = None
     rate_limit_stage: Optional[str] = None
     rate_limit_room_id: Optional[str] = None
 
@@ -883,8 +884,7 @@ def collect_details_and_reviews(
                 details_by_id[rid] = detail_payload
             except Exception as exc:
                 status_code = _http_status_code(exc)
-                if request_policy and status_code in {401, 403}:
-                    raise
+                access_denied = bool(request_policy and status_code in {401, 403})
                 unavailable = type(exc).__name__ == "UnavailableError" and status_code != 429
                 detail_failed = not unavailable
                 failure_record = dict(details_by_id.get(rid, {}))
@@ -918,8 +918,8 @@ def collect_details_and_reviews(
                     if getattr(exc, 'collection_operation', None):
                         failure['operation'] = exc.collection_operation
                     failed.append(failure)
-        # A detail quote may be higher than the discovery quote. Apply the
-        # threshold again before spending requests on reviews or AI.
+        # A detail quote may differ from the discovery quote. Apply the
+        # price range again before spending requests on reviews or AI.
         if selection is not None and detail_payload is not None and party_quote_supported:
             detail_total, _, _ = _explicit_record_total(detail_payload)
             if detail_total is not None:
@@ -928,12 +928,13 @@ def collect_details_and_reviews(
                 results.loc[mask, 'selection_quote_at'] = detail_payload['details_fetched_at']
                 results.loc[mask, 'selection_quote_verified'] = True
                 _atomic_csv(results, results_path)
-                if selection.get('max_total') is not None and detail_total > selection['max_total']:
+                if (detail_total < selection.get('min_total', 0) or
+                        (selection.get('max_total') is not None and detail_total > selection['max_total'])):
                     needs_reviews = False
                     budget_skipped_ids.append(rid)
         if request_policy and details_by_id.get(rid, {}).get('quote_attempt_status') == 'unavailable':
             needs_reviews = False
-        if needs_reviews and not rate_limited:
+        if needs_reviews and not (rate_limited or access_denied):
             try:
                 saved_detail = details_by_id.get(rid, {})
                 review_metadata = {}
@@ -971,8 +972,7 @@ def collect_details_and_reviews(
             except Exception as exc:
                 review_failed = True
                 status_code = _http_status_code(exc)
-                if request_policy and status_code in {401, 403}:
-                    raise
+                access_denied = bool(request_policy and status_code in {401, 403})
                 if status_code == 429:
                     rate_limited = True
                     rate_limit_stage = "reviews"
@@ -1004,27 +1004,28 @@ def collect_details_and_reviews(
             "trip_revision": current_revision,
             "rate_limited": rate_limited,
             "attempted_room_ids": attempted_room_ids,
-            "unattempted_room_ids": [entry[0] for entry in work[index:]] if rate_limited else [],
+            "unattempted_room_ids": [entry[0] for entry in work[index:]] if rate_limited or access_denied else [],
         }, output_dir / "collection_failures.json")
         persist_merged_snapshot()
         if progress_callback:
             message = f"Checkpointed {index} of {len(work)} listings"
             if rate_limited:
                 message = f"Rate limit (HTTP 429) at {rid}; stopped before further requests. Checkpoint saved."
+            if access_denied:
+                message = "Airbnb denied access; stopped further collection. Checkpoints saved."
             progress_callback(index, len(work), message)
-        if rate_limited:
-            rate_limited_index = index
+        if rate_limited or access_denied:
+            stopped_index = index
             break
 
     # Final checkpoint also refreshes any quote status after an interrupted run.
     persist_merged_snapshot()
     status = (
         ("partial" if completed else "failed")
-        if rate_limited else ("partial" if failed else "success")
+        if stopped_index is not None else ("partial" if failed else "success")
     )
     unattempted_room_ids = (
-        [entry[0] for entry in work[rate_limited_index:]]
-        if rate_limited and rate_limited_index is not None else []
+        [entry[0] for entry in work[stopped_index:]] if stopped_index is not None else []
     )
     if rate_limited:
         message = (
@@ -1033,6 +1034,8 @@ def collect_details_and_reviews(
             + ("Request retries exhausted; automatic resume will follow if its limits permit." if request_policy
                else "Wait before retrying; no automatic retry was made.")
         )
+    elif access_denied:
+        message = "Airbnb denied access. Ready listings were saved and remaining collection is pending."
     else:
         message = "Quotes are keyed to the saved trip revision and are labeled current, stale or unverified from provider parameter support."
     return {

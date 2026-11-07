@@ -5,6 +5,8 @@ import re
 from typing import Any, Dict
 import pandas as pd
 
+STATION_ASSETS = Path(__file__).with_name("map_assets")
+
 STATION_ICONS = {
     'metro': '<svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><circle cx="16" cy="16" r="11" fill="white" stroke="#d21f32" stroke-width="5"/><rect x="1" y="12" width="30" height="8" rx="1" fill="#154b99"/></svg>',
     'rail': '<svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="6" fill="#1456a0"/><rect x="8" y="5" width="16" height="20" rx="4" fill="white"/><path d="M10 9h5v6h-5zm7 0h5v6h-5z" fill="#1456a0"/><circle cx="12" cy="21" r="1.5" fill="#1456a0"/><circle cx="20" cy="21" r="1.5" fill="#1456a0"/><path d="m11 25-3 4m13-4 3 4" stroke="white" stroke-width="2"/></svg>',

@@ -1,0 +1,28 @@
+.station-label {
+  position: absolute;
+  visibility: hidden;
+  width: max-content;
+  max-width: 220px;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  background: white;
+  border: 1px solid #a7b6ca;
+  border-radius: 3px;
+  padding: 2px 5px;
+  color: #17345e;
+  font: 700 12px/1.25 system-ui, sans-serif;
+  pointer-events: none;
+}
+.station-label-visible,
+.station-pin:hover > .station-label,
+.station-pin:focus > .station-label {
+  visibility: visible;
+}
+.station-pin:hover,
+.station-pin:focus {
+  z-index: 10000 !important;
+}
+.station-pin:focus-visible {
+  outline: 3px solid #1456a0;
+  outline-offset: 2px;
+}

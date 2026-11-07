@@ -68,11 +68,13 @@ def validate_existing_search_name(name: str) -> str:
     return value
 
 
-def make_search_slug(label: str) -> str:
+def make_search_slug(label: str, *, preserve_case: bool = False) -> str:
     """Create a readable, path-safe workspace name from a destination and dates."""
     text = unicodedata.normalize("NFKD", str(label or ""))
     text = "".join(char for char in text if not unicodedata.combining(char))
-    slug = re.sub(r"[^A-Za-z0-9]+", "_", text).strip("_").lower()
+    slug = re.sub(r"[^A-Za-z0-9]+", "_", text).strip("_")
+    if not preserve_case:
+        slug = slug.lower()
     slug = re.sub(r"_+", "_", slug)[:64].strip("_")
     if not slug:
         raise ValueError("Enter a destination to create a readable search name.")
@@ -545,5 +547,27 @@ def geocode_location(query: str, timeout: float = 6.0) -> Optional[Dict[str, Any
     except Exception:
         return None
     return None
+
+
+def reverse_geocode_location(latitude: float, longitude: float, timeout: float = 4.0) -> Optional[str]:
+    """Find a neighborhood or locality name near the chosen map center."""
+    import requests
+
+    try:
+        response = requests.get(
+            "https://nominatim.openstreetmap.org/reverse",
+            params={"lat": latitude, "lon": longitude, "format": "jsonv2", "zoom": 14, "addressdetails": 1},
+            headers={"User-Agent": "AirbnbAIAnalyzer/2.0 (https://github.com/JohnKruse/aBnB_AI_Analyzer)"},
+            timeout=timeout,
+        )
+        response.raise_for_status()
+        address = response.json().get("address", {})
+        locality = next((address[key] for key in ("city", "town", "village", "municipality", "county")
+                         if address.get(key)), "")
+        area = next((address[key] for key in ("neighbourhood", "suburb", "borough", "city_district", "quarter", "hamlet")
+                     if address.get(key)), "")
+        return ", ".join(dict.fromkeys(part for part in (area, locality) if part)) or None
+    except (requests.RequestException, AttributeError, TypeError, ValueError):
+        return None
 
 

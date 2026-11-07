@@ -18,6 +18,11 @@ def test_threshold_is_separate_from_trip_and_uses_only_current_stay_quotes(tmp_p
     assert processing.select_properties(frame, definition, saved)['selected_ids'] == ['cheap']
     saved = processing.save_selection(tmp_path, definition, {'max_total': 700, 'include_unknown': True})
     assert processing.select_properties(frame, definition, saved)['selected_ids'] == ['cheap', 'expensive', 'unknown']
+    ranged = processing.save_selection(tmp_path, definition, {'min_total': 200, 'max_total': 700})
+    assert ranged['min_total'] == 200
+    assert processing.load_selection(tmp_path, definition) == ranged
+    assert processing.select_properties(frame, definition, ranged)['selected_ids'] == ['expensive']
+    assert processing.select_properties(frame, definition, {**ranged, 'include_unknown': True})['selected_ids'] == ['expensive', 'unknown']
     frame.loc[0, 'search_quote_check_in'] = '2026-01-01'
     assert processing.select_properties(frame, definition, {**saved, 'include_unknown': False})['selected_ids'] == ['expensive']
 
@@ -46,3 +51,11 @@ def test_price_slider_rounds_median_up_to_50_and_keeps_saved_choice():
     assert processing.price_slider_limits([1, 20])[2] == 50
     assert processing.price_slider_limits([700, 840], saved_max=901)[2] == 950
     assert processing.price_slider_limits([700, 840], current=1500)[1] == 1500
+
+
+def test_processing_range_rejects_invalid_bounds(tmp_path):
+    import pytest
+    for minimum, maximum in [(-50, 500), (float('nan'), 500), (600, 500), (float('inf'), None)]:
+        with pytest.raises(ValueError):
+            processing.save_selection(tmp_path, {'trip_revision': 1},
+                                      {'min_total': minimum, 'max_total': maximum})

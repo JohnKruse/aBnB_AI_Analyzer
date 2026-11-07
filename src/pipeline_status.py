@@ -628,7 +628,7 @@ def get_pipeline_status(search_name: str, profile_name: str = "Default") -> Dict
     completed_detail_ids = detail_unavailable_ids | (detail_success_ids & review_ids)
     detail_job_state = _job_state(detail_job, "details")
     active_detail = bool(active and active.get("status") in {"queued", "running"} and active.get("current_stage") in {"details", "refresh"})
-    details_complete = bool(current_ids) and len(completed_detail_ids) == len(current_ids) and not detail_failed_ids
+    details_complete = bool(current_ids) and len(completed_detail_ids) == len(current_ids) and not overall_failed_ids
     detail_count = len(completed_detail_ids)
     unclassified_failures = max(
         len(unclassified_failure_ids),
@@ -741,7 +741,8 @@ def get_pipeline_status(search_name: str, profile_name: str = "Default") -> Dict
         profile_hash = None
         profile_error = f"Selected profile is unavailable: {type(exc).__name__}: {exc}"
 
-    eligible_ids = sorted(current_ids - detail_unavailable_ids)
+    eligible_ids = sorted(completed_detail_ids - detail_unavailable_ids - overall_failed_ids)
+    pending_collection_ids = sorted(current_ids - set(eligible_ids) - detail_unavailable_ids)
     matching_profile_jobs = [
         manifest for manifest in history.get("_all", [])
         if manifest.get("profile_name", "Default") == profile_name
@@ -799,15 +800,13 @@ def get_pipeline_status(search_name: str, profile_name: str = "Default") -> Dict
     elif not current_ids:
         evaluation_state = "no_matches" if discover_state == "no_matches" else "blocked"
         evaluation_reason = "Discover listings before evaluation."
-    elif details_state != "success":
-        evaluation_state = "blocked"
-        evaluation_reason = "Complete current details and review collection before evaluation."
     elif profile_error:
         evaluation_state = "blocked"
         evaluation_reason = profile_error
     elif not eligible_ids:
-        evaluation_state = "no_matches"
-        evaluation_reason = "All current listings are unavailable for these dates; none are eligible for evaluation."
+        evaluation_state = "blocked" if pending_collection_ids else "no_matches"
+        evaluation_reason = ("AI can start once at least one listing has details and a reviews checkpoint."
+                             if pending_collection_ids else "All current listings are unavailable for these dates.")
     elif not has_active_criteria:
         evaluation_state = "blocked"
         evaluation_reason = "Give at least one personal-priority criterion a nonzero weight before evaluation."
@@ -831,6 +830,8 @@ def get_pipeline_status(search_name: str, profile_name: str = "Default") -> Dict
     else:
         evaluation_state = "ready"
         evaluation_reason = "Ready to evaluate eligible listings with the selected profile."
+    if eligible_ids and pending_collection_ids:
+        evaluation_reason += f" {len(pending_collection_ids)} listing(s) still need details or reviews."
     evaluation = {
         "state": evaluation_state,
         "count": len(evaluated_ids),
@@ -844,7 +845,7 @@ def get_pipeline_status(search_name: str, profile_name: str = "Default") -> Dict
         "failed": eval_failed_count,
         "missing": len(missing_eval_ids),
         "stale": len(stale_eval_ids),
-        "can_start": bool(definition and profile and has_active_criteria and details_complete and eligible_ids and not has_writer and evaluation_state not in {"running", "success", "no_matches"}),
+        "can_start": bool(definition and profile and has_active_criteria and eligible_ids and not has_writer and evaluation_state not in {"running", "success", "no_matches"}),
         "reason": evaluation_reason,
         "profile_fingerprint": profile_hash,
         "job": _job_summary(evaluation_job_current, "evaluate"),
@@ -868,6 +869,7 @@ def get_pipeline_status(search_name: str, profile_name: str = "Default") -> Dict
         "processing_selected_count": len(current_ids),
         "discovered_count": len(discovered_ids),
         "eligible_room_ids": eligible_ids,
+        "pending_collection_room_ids": pending_collection_ids,
         "active_job": active,
         "next_stage": next_stage,
         "stages": stages,

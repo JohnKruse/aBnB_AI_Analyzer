@@ -4,6 +4,7 @@ from __future__ import annotations
 import re
 import threading
 import time
+from urllib.error import HTTPError
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from typing import Callable
@@ -147,8 +148,20 @@ class RequestPolicy:
             with _LOCK:
                 now = time.monotonic()
                 slot = max(now, _NEXT_REQUEST.get(service, now))
-                _NEXT_REQUEST[service] = slot+interval*self.slowdown.get(service, 1)
-            self.wait(max(0., slot-time.monotonic()), f'Pacing {service} requests')
+                spacing = interval * self.slowdown.get(service, 1)
+                delay = slot - now
+                # A long wait inherited from another run must fit this run's
+                # budget. Later attempts have already waited on their own 429.
+                cooling = service == 'airbnb' and attempt == 1 and delay > spacing + 1
+                if not cooling or delay <= self.retry_budget_seconds - self.retry_waited_seconds:
+                    _NEXT_REQUEST[service] = slot + spacing
+            if cooling:
+                if not self.wait_retry(delay, f'{service} provider cooldown'):
+                    error = HTTPError('', 429, f'{service} cooldown exceeds the retry wait budget', {}, None)
+                    error.collection_operation = operation
+                    raise error
+            else:
+                self.wait(max(0., slot-time.monotonic()), f'Pacing {service} requests')
             try:
                 return function()
             except Exception as exc:

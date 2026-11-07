@@ -17,7 +17,7 @@ import streamlit as st
 from streamlit_folium import st_folium
 
 from src.search_service import normalize_geometry, normalize_map_zoom
-from src.transit_service import saved_london_stations as _saved_london_stations
+from src.transit_service import STATION_ASSETS, saved_london_stations as _saved_london_stations
 
 
 DEFAULT_CENTER = (45.0703, 7.6869)  # Torino; editable, with no geocoder request.
@@ -54,15 +54,17 @@ def _add_transit_stations(map_view: folium.Map) -> None:
     """Load station markers for the visible area without rerunning Streamlit."""
     group = folium.FeatureGroup(name="Train and Tube / Metro stations", show=True)
     group.add_to(map_view)
-    script = (Path(__file__).parent / "assets" / "transit_stations.js").read_text(encoding="utf-8")
+    script = (STATION_ASSETS / "station_labels.js").read_text(encoding="utf-8")
+    script += "\n" + (Path(__file__).parent / "assets" / "transit_stations.js").read_text(encoding="utf-8")
     overlay = MacroElement()
     overlay._name = "TransitStations"
     overlay.map_name = map_view.get_name()
     overlay.group_name = group.get_name()
     overlay.saved_stations = _saved_london_stations()
+    overlay.label_styles = (STATION_ASSETS / "station_labels.css").read_text(encoding="utf-8")
     overlay._template = Template(
         "{% macro script(this, kwargs) %}\n" + script +
-        "\nsetupBnbTransit({{ this.map_name }}, {{ this.group_name }}, {{ this.saved_stations | tojson }});\n{% endmacro %}"
+        "\nsetupBnbTransit({{ this.map_name }}, {{ this.group_name }}, {{ this.saved_stations | tojson }}, {{ this.label_styles | tojson }});\n{% endmacro %}"
     )
     map_view.add_child(overlay)
 

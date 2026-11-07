@@ -352,7 +352,7 @@ def test_search_table_includes_all_searches_and_requested_columns(monkeypatch, t
     app = _app_test(browse=False).run()
     assert not app.exception
     frame = browser_app._search_table_rows(list(records.values()))
-    assert frame.columns.tolist() == ["Location", "Stay dates", "People", "Properties", "Last updated", "Search"]
+    assert frame.columns.tolist() == ["Search", "Location", "Stay dates", "People", "Last updated", "Properties"]
     assert len(frame) == 2  # Old searches remain visible.
     assert frame.iloc[0]["People"] == 3
     assert frame.iloc[0]["Properties"] == 129
@@ -625,6 +625,18 @@ def test_fractional_config_zoom_initializes_listing_map_with_center_only_state(m
     assert app.session_state["map_zoom_turin-fixture"] == 18
 
 
+def _commit_fixture_processing_selection(tmp_path):
+    from src.processing_service import save_selection
+    from src.storage_service import write_frame
+    definition = browser_app._active_definition("turin-fixture")
+    directory = tmp_path / "searches" / "turin-fixture"
+    write_frame(directory / "output_data" / "results_df.csv", pd.DataFrame({
+        "room_id": ["fixture-101", "fixture-202", "fixture-303"],
+        "trip_revision": definition["trip_revision"],
+    }))
+    save_selection(directory, definition, {"max_total": None, "include_unknown": True})
+
+
 def test_pipeline_progress_gates_discovery_details_and_current_profile_evaluation(monkeypatch, tmp_path):
     _, jobs = _setup_existing_app(monkeypatch, tmp_path)
     has_dataset = {"value": False}
@@ -641,17 +653,7 @@ def test_pipeline_progress_gates_discovery_details_and_current_profile_evaluatio
         _status_stage("blocked", total=153, missing=153, reason="Complete current details and reviews first."),
         "details",
     )
-    jobs.after_start["details"] = _pipeline_snapshot(
-        _status_stage("success", count=153, total=153, completed=153),
-        _status_stage(
-            "success", count=153, total=153, completed=153,
-            details={"attempted": 153, "succeeded": 151, "unavailable": 2, "failed": 0, "missing": 0},
-            reviews={"attempted": 151, "succeeded": 151, "failed": 0, "missing": 0},
-        ),
-        _status_stage("ready", total=151, missing=151, can_start=True, reason="Ready to evaluate current evidence."),
-        "evaluate",
-    )
-    jobs.after_start["evaluate"] = _pipeline_snapshot(
+    jobs.after_start["prepare"] = _pipeline_snapshot(
         _status_stage("success", count=153, total=153, completed=153),
         _status_stage(
             "success", count=153, total=153, completed=153,
@@ -673,39 +675,22 @@ def test_pipeline_progress_gates_discovery_details_and_current_profile_evaluatio
     app = _app_test().run()
     assert not app.exception
     assert not app.button(key="pipeline_step_turin-fixture_discover").disabled
-    assert app.button(key="pipeline_step_turin-fixture_details").disabled
-    assert app.button(key="pipeline_step_turin-fixture_evaluate").disabled
-    assert not any("Preparation is complete" in item.value for item in app.success)
-
+    assert app.button(key="run_all_turin-fixture").disabled
+    assert not any(button.key in {"pipeline_step_turin-fixture_details", "pipeline_step_turin-fixture_evaluate"}
+                   for button in app.button)
     app.button(key="pipeline_step_turin-fixture_discover").click().run()
     assert not app.exception
     assert "153 listings found." in [item.value for item in app.caption]
-    assert app.button(key="pipeline_step_turin-fixture_details").disabled
-    from src.processing_service import save_selection
-    save_selection(tmp_path / 'searches' / 'turin-fixture', browser_app._active_definition('turin-fixture'), {'max_total': None, 'include_unknown': True})
+    _commit_fixture_processing_selection(tmp_path)
     app.run()
-    assert not app.button(key="pipeline_step_turin-fixture_details").disabled
-    assert app.button(key="pipeline_step_turin-fixture_evaluate").disabled
-
-    app.button(key="pipeline_step_turin-fixture_details").click().run()
+    prepare = app.button(key="run_all_turin-fixture")
+    assert not prepare.disabled
+    assert prepare.label == "Fetch selected + evaluate"
+    prepare.click().run()
     assert not app.exception
+    assert jobs.started[-1] == ("turin-fixture", "prepare", "Default")
     assert any("Details: 151 ready" in item.value for item in app.caption)
     assert any("Reviews: 151 ready" in item.value for item in app.caption)
-    assert app.button(key="pipeline_step_turin-fixture_evaluate").disabled
-
-    # Saving must be available in the main workflow even with priorities collapsed.
-    save_key = "save_profile_turin-fixture"
-    assert not app.main.button(key=save_key).disabled
-    assert all(button.key != save_key for button in app.sidebar.button)
-    priorities = next(item for item in app.expander if item.label == "AI evaluation priorities")
-    assert priorities.proto.expanded
-    assert all(button.key != save_key for button in priorities.button)
-    assert any("Your search is saved" in item.value for item in app.main.info)
-    app.button(key="save_profile_turin-fixture").click().run()
-    assert not app.exception
-    assert not app.button(key="pipeline_step_turin-fixture_evaluate").disabled
-    app.button(key="pipeline_step_turin-fixture_evaluate").click().run()
-    assert not app.exception
     assert any("Preparation is complete" in item.value for item in app.success)
     assert sum(item.value == "✅ Complete" for item in app.success) >= 3
     assert any("140 scored · 11 insufficient evidence" in item.value for item in app.caption)
@@ -713,8 +698,7 @@ def test_pipeline_progress_gates_discovery_details_and_current_profile_evaluatio
 
 def test_running_fragment_progress_and_partial_details_retry(monkeypatch, tmp_path):
     _, jobs = _setup_existing_app(monkeypatch, tmp_path)
-    from src.processing_service import save_selection
-    save_selection(tmp_path / 'searches' / 'turin-fixture', browser_app._active_definition('turin-fixture'), {'max_total': None, 'include_unknown': True})
+    _commit_fixture_processing_selection(tmp_path)
     jobs.pipeline_status = _pipeline_snapshot(
         _status_stage("success", count=3, total=3, completed=3),
         _status_stage(
@@ -741,6 +725,8 @@ def test_running_fragment_progress_and_partial_details_retry(monkeypatch, tmp_pa
         _status_stage("blocked", total=3, missing=3, reason="Complete current details and reviews first."),
         "details",
     )
+    partial["stages"]["evaluate"] = _status_stage("ready", total=2, missing=2, can_start=True)
+    partial["pending_collection_room_ids"] = ["fixture-202"]
     jobs.pipeline_status = partial
     jobs.status_sequence = [running, partial]
 
@@ -749,16 +735,27 @@ def test_running_fragment_progress_and_partial_details_retry(monkeypatch, tmp_pa
     assert any("1 of 3 processed in this stage" in item.value for item in app.caption)
     assert any("Running now: Details" in item.value for item in app.info)
 
-    app.button(key="poll_job_turin-fixture").click().run()
+    assert not app.button(key="cancel_job_turin-fixture").disabled
+    app.run()
     assert not app.exception
     assert any("⚠️ Partial" in item.value for item in app.warning)
     assert any("1 unclassified failures" in item.value for item in app.caption)
-    retry = app.button(key="pipeline_step_turin-fixture_details")
-    assert not retry.disabled
-    assert retry.label.startswith("Retry")
+    assert any("Details or reviews are pending" in item.value for item in app.caption)
+    action = app.button(key="run_all_turin-fixture")
+    assert not action.disabled
+    assert action.label == "Evaluate ready listings"
+    action.click().run()
+    assert not app.exception
+    assert jobs.started[-1] == ("turin-fixture", "evaluate", "Default")
+
+    jobs.job = None
+    partial["stages"]["evaluate"] = _status_stage("success", count=2, total=2)
+    app.run()
+    retry = app.button(key="run_all_turin-fixture")
+    assert retry.label == "Retry preparation"
     retry.click().run()
     assert not app.exception
-    assert jobs.started[-1] == ("turin-fixture", "details", "Default")
+    assert jobs.started[-1] == ("turin-fixture", "prepare", "Default")
 
 
 def test_terminal_fragment_refreshes_full_app_once(monkeypatch, tmp_path):
@@ -790,7 +787,7 @@ def test_terminal_fragment_refreshes_full_app_once(monkeypatch, tmp_path):
     assert not app.exception
     assert app.session_state["_pipeline_was_active_turin-fixture"] is True
 
-    app.button(key="poll_job_turin-fixture").click().run()
+    app.run()
     assert not app.exception
     assert app.session_state["_pipeline_was_active_turin-fixture"] is False
     assert load_count["value"] == 1
@@ -984,9 +981,14 @@ def test_cache_skips_a_legacy_read_that_overlaps_revision_two_write(monkeypatch,
     assert load_count["value"] == 2
 
 
-def test_save_search_rerun_selects_new_workspace_safely(monkeypatch, tmp_path):
+@pytest.mark.parametrize("lock_area", [True, False])
+def test_save_map_only_search_infers_location_and_selects_new_workspace(monkeypatch, tmp_path, lock_area):
     _isolated_roots(monkeypatch, tmp_path)
-    monkeypatch.setattr(browser_app, "geocode_location", lambda query: None)
+    reverse_calls = []
+    def reverse_lookup(lat, lng):
+        reverse_calls.append((lat, lng))
+        return "Crocetta, Turin"
+    monkeypatch.setattr(browser_app, "reverse_geocode_location", reverse_lookup)
     monkeypatch.setattr(job_service, "start_search_job", lambda *args, **kwargs: None)
     monkeypatch.setattr(browser_app, "list_available_searches", lambda: pipeline_service.list_available_searches())
     feature = {
@@ -1001,22 +1003,33 @@ def test_save_search_rerun_selects_new_workspace_safely(monkeypatch, tmp_path):
         "bounds": {"_southWest": {"lat": 45.05, "lng": 7.65}, "_northEast": {"lat": 45.09, "lng": 7.72}},
     })
     app = _app_test().run()
-    app.text_input(key="new_destination").set_value("Turin")
-    app.run()
-    assert not app.exception
+    assert not app.text_input(key="new_destination").value
+    assert not app.button(key="new_use_visible_area").disabled
+    if lock_area:
+        app.button(key="new_use_visible_area").click().run()
+        assert not app.exception
+        assert app.text_input(key="new_search_name").value.startswith("Crocetta_")
+    else:
+        app.run()  # Apply the map viewport returned on the first render.
     app.button(key="save_new_search").click().run()
 
     assert not app.exception
     created_searches = pipeline_service.list_available_searches()
     assert len(created_searches) == 1
-    assert search_service.load_search_definition(created_searches[0])["free_cancellation"] is False
-    assert app.session_state["active_search_selection"] == created_searches[0]
+    name = created_searches[0]
+    assert name.startswith("Crocetta_") and name.endswith("_01")
+    assert browser_app._suggest_search_name("Crocetta, Turin", [name.lower()]).endswith("_02")
+    saved = search_service.load_search_definition(name)
+    assert saved["free_cancellation"] is False
+    assert saved["location"] == "Crocetta, Turin"
+    assert saved["geometry"]["bounds"] == {"south": 45.05, "north": 45.09, "west": 7.65, "east": 7.72}
+    assert len(reverse_calls) == 1
+    assert app.session_state["active_search_selection"] == name
 
 
 def test_fixture_explorer_shows_verified_and_unknown_location_results_and_job_scope(monkeypatch, tmp_path):
     evaluation, jobs = _setup_existing_app(monkeypatch, tmp_path)
-    from src.processing_service import save_selection
-    save_selection(tmp_path / 'searches' / 'turin-fixture', browser_app._active_definition('turin-fixture'), {'max_total': None, 'include_unknown': True})
+    _commit_fixture_processing_selection(tmp_path)
 
     app = _app_test().run()
 
@@ -1025,7 +1038,6 @@ def test_fixture_explorer_shows_verified_and_unknown_location_results_and_job_sc
     rendered_captions = "\n".join(element.value for element in app.caption if hasattr(element, "value"))
     assert "1 shown of 1 matching · 3 collected" in rendered_captions
     assert "Only positive, current Airbnb quoted amounts appear by default" in rendered_captions
-    assert any(button.label == "Evaluate with AI" and button.disabled for button in app.button)
     app.checkbox(key="include_unknown_prices_turin-fixture").set_value(True).run()
     assert not app.exception
     rendered_captions = "\n".join(element.value for element in app.caption if hasattr(element, "value"))
@@ -1045,19 +1057,22 @@ def test_fixture_explorer_shows_verified_and_unknown_location_results_and_job_sc
     app.button(key="undo_hide_turin-fixture").click().run()
     assert not app.exception
     assert "fixture-202" not in curation_service.load_user_curation("turin-fixture")["hidden_room_ids"]
+    app.button(key="edit_profile_turin-fixture").click().run()
     app.text_input(key="profile_name_turin-fixture_Default").set_value("Quiet")
-    app.number_input(key="weight_turin-fixture_Default_quiet_sleep").set_value(5)
+    app.session_state["priority_weights_turin-fixture_Default"] = {
+        "edited_rows": {0: {"Quiet": 5}}, "added_rows": [], "deleted_rows": [],
+    }
     app.text_area(key="instructions_turin-fixture_Default").set_value("Street noise matters most.")
     app.run()
     assert not app.exception
-    assert app.button(key="pipeline_step_turin-fixture_evaluate").disabled
-    app.button(key="save_profile_turin-fixture").click().run()
+    assert app.button(key="run_all_turin-fixture").disabled
+    next(button for button in app.button if button.label == "Save profile").click().run()
     assert not app.exception
-    assert app.selectbox(key="profile_select_turin-fixture").value == "Quiet"
-    assert app.number_input(key="weight_turin-fixture_Quiet_quiet_sleep").value == 5
-    assert app.text_area(key="instructions_turin-fixture_Quiet").value == "Street noise matters most."
-    assert any(button.label == "Evaluate with AI" and not button.disabled for button in app.button)
-    app.button(key="pipeline_step_turin-fixture_evaluate").click().run()
+    assert app.session_state["profile_select_turin-fixture"] == "Quiet"
+    assert evaluation.load_evaluation_profile("turin-fixture", "Quiet")["weights"]["quiet_sleep"] == 5
+    assert evaluation.load_evaluation_profile("turin-fixture", "Quiet")["additional_instructions"] == "Street noise matters most."
+    assert any(button.label == "Evaluate listings" and not button.disabled for button in app.button)
+    app.button(key="run_all_turin-fixture").click().run()
     assert not app.exception
     assert jobs.started == [("turin-fixture", "evaluate", "Quiet")]
     assert any("Queued test job" in element.value for element in app.info if hasattr(element, "value"))
@@ -1402,9 +1417,8 @@ def test_new_search_form_geocoding_and_map_locking(monkeypatch, tmp_path):
     app = _app_test().run()
     assert not app.exception
 
-    # Initially before entering location, date input is disabled
-    date_widget = [w for w in app.date_input if w.key == "new_check_in"][0]
-    assert date_widget.disabled is True
+    assert not app.date_input(key="new_check_in").disabled
+    assert [widget.key for widget in app.text_input][:2] == ["new_destination", "new_search_name"]
 
     # Enter destination and click Find
     app.text_input(key="new_destination").set_value("Turin").run()
@@ -1412,14 +1426,14 @@ def test_new_search_form_geocoding_and_map_locking(monkeypatch, tmp_path):
     assert not app.exception
     assert app.session_state["new_map_center"] == (45.067, 7.682)
 
-    # After location is entered, inputs are enabled
-    date_widget = [w for w in app.date_input if w.key == "new_check_in"][0]
-    assert date_widget.disabled is False
+    assert app.text_input(key="new_search_name").value.startswith("Turin_")
+    app.text_input(key="new_search_name").set_value("Custom_Turin").run()
 
     # Click Use Map Area to lock
     app.button(key="new_use_visible_area").click().run()
     assert not app.exception
     assert app.session_state["new_map_area_locked"] is True
+    assert app.text_input(key="new_search_name").value == "Custom_Turin"
 
     # Unlock Map Area
     app.button(key="new_unlock_area").click().run()
@@ -1452,15 +1466,18 @@ def test_run_all_saves_current_priorities_and_launches_without_separate_save(mon
     storage_service.write_frame(tmp_path / 'searches' / 'turin-fixture' / 'output_data' / 'results_df.csv', rows)
     app = _app_test(browse=False).run()
     assert not app.button(key='run_all_turin-fixture').disabled
-    app.number_input(key='weight_turin-fixture_Default_cleanliness').set_value(5).run()
+    slider = app.slider(key='processing_range_slider_turin-fixture_1')
+    assert tuple(slider.value) == (0, 850)
+    slider.set_range(50, 850).run()
     app.button(key='run_all_turin-fixture').click().run()
     assert not app.exception
     assert evaluation.saved == ['Default']
     assert jobs.started == [('turin-fixture', 'prepare', 'Default')]
     saved = evaluation.load_evaluation_profile('turin-fixture')
-    assert saved['weights']['cleanliness'] == 5
+    assert saved['weights']['cleanliness'] == 3
     from src.processing_service import load_selection
     selection = load_selection(tmp_path / 'searches' / 'turin-fixture', browser_app._active_definition('turin-fixture'))
+    assert selection['min_total'] == 50
     assert selection['max_total'] == 850
     assert selection['trip_revision'] == 1
 
@@ -1472,20 +1489,22 @@ def test_reusable_profile_ui_defaults_to_newest_and_can_save_copy_and_delete(mon
     monkeypatch.setattr(browser_app, '_service', lambda name: evaluation_service if name.endswith('evaluation_service') else jobs)
     app = _app_test(browse=False).run()
     assert not app.exception
-    assert app.selectbox(key='profile_select_turin-fixture').value == 'Beach'
-    assert app.number_input(key='weight_turin-fixture_Beach_cleanliness').value == 2
-    assert not any(slider.key and slider.key.startswith('weight_') for slider in app.slider)
-    app.text_input(key='profile_name_turin-fixture_Beach').set_value('Enrica').run()
-    app.number_input(key='weight_turin-fixture_Beach_cleanliness').set_value(5).run()
-    app.button(key='save_profile_turin-fixture').click().run()
+    assert app.session_state['profile_select_turin-fixture'] == 'Beach'
+    assert not app.text_area
+    app.button(key='edit_profile_turin-fixture').click().run()
+    app.text_input(key='profile_name_turin-fixture_Beach').set_value('Enrica')
+    app.session_state['priority_weights_turin-fixture_Beach'] = {
+        'edited_rows': {0: {'Clean': 5}}, 'added_rows': [], 'deleted_rows': [],
+    }
+    next(button for button in app.button if button.label == 'Save profile').click().run()
     assert not app.exception
-    assert app.selectbox(key='profile_select_turin-fixture').value == 'Enrica'
+    assert app.session_state['profile_select_turin-fixture'] == 'Enrica'
     assert evaluation_service.list_priority_profiles()[0]['name'] == 'Enrica'
     assert evaluation_service.load_priority_profile('Beach')['weights']['cleanliness'] == 2
     app.button(key='delete_profile_turin-fixture').click().run()
     app.button(key='confirm_delete_profile_turin-fixture').click().run()
     assert not app.exception
-    assert app.selectbox(key='profile_select_turin-fixture').value == 'Beach'
+    assert app.session_state['profile_select_turin-fixture'] == 'Beach'
     assert 'Enrica' not in [profile['name'] for profile in evaluation_service.list_priority_profiles()]
     assert evaluation_service.load_evaluation_profile('turin-fixture', 'Enrica')['weights']['cleanliness'] == 5
 
@@ -1496,12 +1515,24 @@ def test_new_profile_elsewhere_does_not_reset_explicit_current_selection(monkeyp
     evaluation_service.save_priority_profile('Beach', {'cleanliness': 2})
     monkeypatch.setattr(browser_app, '_service', lambda name: evaluation_service if name.endswith('evaluation_service') else jobs)
     app = _app_test(browse=False).run()
-    app.selectbox(key='profile_select_turin-fixture').set_value('City').run()
+    from types import SimpleNamespace
+
+    def grid(frame, **options):
+        if options['key'].startswith('priority_table_'):
+            assert frame.columns[:3].tolist() == ['Use', 'Profile', 'Clean']
+            assert frame.set_index('Profile').loc['City', 'Clean'] == 4
+            assert options['gridOptions']['rowSelection'] == 'single'
+            return SimpleNamespace(event_data={'type': 'selectionChanged'},
+                                   selected_rows=frame[frame['Profile'].eq('City')])
+        return SimpleNamespace(event_data=None, selected_rows=None)
+
+    monkeypatch.setattr(browser_app, 'AgGrid', grid)
+    app.run()
     assert not app.exception
     evaluation_service.save_priority_profile('Enrica', {'cleanliness': 5})
     app.run()
     assert not app.exception
-    assert app.selectbox(key='profile_select_turin-fixture').value == 'City'
+    assert app.session_state['profile_select_turin-fixture'] == 'City'
 
 
 def test_retry_countdown_uses_live_deadline_and_never_promises_terminal_retry():

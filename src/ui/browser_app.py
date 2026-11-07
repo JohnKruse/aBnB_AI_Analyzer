@@ -25,6 +25,7 @@ import streamlit as st
 from st_aggrid import AgGrid, AgGridTheme, DataReturnMode, GridOptionsBuilder, GridUpdateMode, JsCode
 
 from src.airbnb_service import collector_capabilities
+from src.branding import github_logo_link
 from src.curation_service import (
     CurationCorruptError,
     dismiss_property,
@@ -50,6 +51,7 @@ from src.search_service import (
     normalize_geometry,
     normalize_map_zoom,
     point_in_polygon,
+    reverse_geocode_location,
     save_search_definition,
     validate_trip_definition,
 )
@@ -673,20 +675,51 @@ def _automatic_run_options(scope: str) -> Dict[str, Any]:
                              key=f"review_years_{scope}")
         cap = st.number_input("Maximum reviews per property", min_value=25, max_value=500,
                               value=25, step=25, key=f"review_cap_v2_{scope}")
-        st.caption("Newest reviews first. Up to 3 attempts per request, then up to 2 automatic resume rounds after 5/10-minute cooldowns. Retry waiting is capped at 20–60 minutes based on listing count. Completed work is checkpointed. The app must stay running; the browser tab can be closed.")
+        st.caption("Newest reviews first. Up to 3 attempts per request and 2 automatic resume rounds. Collection spends up to 5 minutes waiting to retry, then AI evaluates the listings that are ready. Completed work is checkpointed. The app must stay running; the browser tab can be closed.")
     return {"review_years": years, "max_reviews": int(cap), "max_attempts": 3}
 
 
-def _new_search_form() -> None:
+def _suggest_search_name(location: str, existing_names: Sequence[str]) -> str:
+    label = location.split(",", 1)[0].strip()
+    try:
+        prefix = make_search_slug(label, preserve_case=True)
+    except ValueError:
+        prefix = "Map_Area"
+    stamp = datetime.now(ZoneInfo("Europe/Rome")).strftime("%y%m%d")
+    taken = {name.casefold() for name in existing_names}
+    number = 1
+    while True:
+        suffix = f"_{stamp}_{number:02d}"
+        candidate = prefix[:64 - len(suffix)].rstrip("_") + suffix
+        if candidate.casefold() not in taken:
+            return candidate
+        number += 1
+
+
+def _map_search_location(bounds: Dict[str, float], lookup: Optional[Dict[str, Any]]) -> Tuple[str, str]:
+    """Return the saved location and its short name for the selected area."""
+    if (lookup and bounds["south"] <= lookup["lat"] <= bounds["north"]
+            and bounds["west"] <= lookup["lng"] <= bounds["east"]):
+        return lookup["query"], lookup["query"]
+    latitude = (bounds["south"] + bounds["north"]) / 2
+    longitude = (bounds["west"] + bounds["east"]) / 2
+    inferred = reverse_geocode_location(latitude, longitude)
+    if inferred:
+        return inferred, inferred
+    return f"Map area ({latitude:.4f}, {longitude:.4f})", "Map Area"
+
+
+def _new_search_form(existing_names: Sequence[str]) -> None:
     st.header("1. Search area and listings")
-    st.caption("Search for a destination, frame your search area on the map, and start discovery.")
+    st.caption("Look up a destination or pan and zoom the map to choose your search area.")
 
     col_left, col_right = st.columns([1, 1], gap="large")
 
     with col_left:
         loc_col, btn_col = st.columns([3, 1])
         with loc_col:
-            destination = st.text_input("Destination or neighborhood", key="new_destination", placeholder="e.g. Turin, Italy or Manhattan, NY")
+            destination = st.text_input("Destination or neighborhood", key="new_destination",
+                                        placeholder="Optional · e.g. Turin, Italy")
         with btn_col:
             st.write("")
             st.write("")
@@ -694,30 +727,45 @@ def _new_search_form() -> None:
 
         query = destination.strip()
         last_geocoded = st.session_state.get("_last_geocoded_query")
-        if (find_clicked or (query and query != last_geocoded)) and query:
+        if not query:
+            st.session_state.pop("_last_geocoded_query", None)
+            st.session_state.pop("new_destination_lookup", None)
+            st.session_state.pop("_geocode_error", None)
+        elif find_clicked or query != last_geocoded:
             geo = geocode_location(query)
             st.session_state["_last_geocoded_query"] = query
+            st.session_state["new_destination_lookup"] = {**geo, "query": query} if geo else None
             if geo:
                 st.session_state["new_map_view_revision"] = int(st.session_state.get("new_map_view_revision", 0)) + 1
                 st.session_state.pop("new_visible_bounds", None)
                 st.session_state["new_map_center"] = (geo["lat"], geo["lng"])
                 st.session_state["new_map_zoom_state"] = geo["zoom"]
                 st.session_state["new_map_area_locked"] = False
-                st.session_state["new_locked_bounds"] = None
-                st.session_state["new_area_geometry"] = {"type": "bbox", **geo["bounds"]} if geo.get("bounds") else None
-                st.session_state["new_geocoded_label"] = geo.get("display_name", query)
-                st.session_state["_geocode_error"] = None
+                st.session_state["new_area_geometry"] = None
+                st.session_state.pop("new_map_area_location", None)
+                st.session_state.pop("_geocode_error", None)
             else:
-                st.session_state["_geocode_error"] = f"Could not locate '{query}'. You may pan and zoom the map manually."
+                st.session_state["_geocode_error"] = f"Could not locate '{query}'. You can still pan and zoom the map."
 
+        lookup = st.session_state.get("new_destination_lookup")
+        locked_location = st.session_state.get("new_map_area_location")
+        name_seed = locked_location[1] if locked_location else query
+        name_key = "new_search_name"
+        current_name = st.session_state.get(name_key, "").strip()
+        auto_name = not current_name or current_name == st.session_state.get("_new_search_suggested_name")
+        if auto_name:
+            suggested = _suggest_search_name(name_seed, existing_names) if name_seed else ""
+            st.session_state[name_key] = suggested
+            st.session_state["_new_search_suggested_name"] = suggested
+        workspace_name = st.text_input(
+            "Search name", key=name_key, max_chars=64, placeholder="Suggested when you choose an area",
+        )
         if st.session_state.get("_geocode_error"):
             st.warning(st.session_state["_geocode_error"])
-        elif st.session_state.get("new_geocoded_label"):
-            st.caption(f"📍 Found: {st.session_state['new_geocoded_label']}")
-
-        has_location = bool(destination and destination.strip())
-        if not has_location:
-            st.info("Enter a destination above and click Find to unlock trip options and the search map.")
+        if locked_location:
+            st.caption(f"📍 Search location: {locked_location[0]}")
+        elif lookup:
+            st.caption(f"📍 Found: {lookup.get('display_name', query)}")
 
         first = date.today() + timedelta(days=30)
         date_left, date_right = st.columns(2)
@@ -728,7 +776,6 @@ def _new_search_form() -> None:
         with date_left:
             check_in = st.date_input(
                 "Check-in", value=first, min_value=date.today(), max_value=MAX_TRIP_DATE - timedelta(days=1), key=check_in_key,
-                disabled=not has_location,
             )
         checkout_default = _prepare_checkout_widget(
             check_in,
@@ -743,43 +790,29 @@ def _new_search_form() -> None:
                 min_value=check_in + timedelta(days=1),
                 max_value=MAX_TRIP_DATE,
                 key="new_check_out",
-                disabled=not has_location,
             )
         _remember_trip_dates("new_trip", check_in, check_out)
 
         party_cols = st.columns(4)
-        adults = party_cols[0].number_input("Adults", min_value=1, max_value=20, value=2, step=1, key="new_adults", disabled=not has_location)
-        children = party_cols[1].number_input("Children", min_value=0, max_value=20, value=0, step=1, key="new_children", disabled=not has_location)
-        infants = party_cols[2].number_input("Infants", min_value=0, max_value=20, value=0, step=1, key="new_infants", disabled=not has_location)
-        pets = party_cols[3].number_input("Pets", min_value=0, max_value=20, value=0, step=1, key="new_pets", disabled=not has_location)
+        adults = party_cols[0].number_input("Adults", min_value=1, max_value=20, value=2, step=1, key="new_adults")
+        children = party_cols[1].number_input("Children", min_value=0, max_value=20, value=0, step=1, key="new_children")
+        infants = party_cols[2].number_input("Infants", min_value=0, max_value=20, value=0, step=1, key="new_infants")
+        pets = party_cols[3].number_input("Pets", min_value=0, max_value=20, value=0, step=1, key="new_pets")
 
-        currency = st.text_input("Currency", value="EUR", max_chars=3, key="new_currency", disabled=not has_location).upper()
-        workspace_name = st.text_input("Search name (optional)", key="new_search_name", placeholder="Generated from destination and date", disabled=not has_location)
+        currency = st.text_input("Currency", value="EUR", max_chars=3, key="new_currency").upper()
+        visible_bounds = st.session_state.get("new_visible_bounds")
+        bounds = visible_bounds or (lookup.get("bounds") if lookup else None)
+        geometry = st.session_state.get("new_area_geometry") if locked_location else None
+        if not geometry and bounds:
+            geometry = {"type": "bbox", **bounds}
 
-        if st.button("Discover listings", type="primary", key="save_new_search", disabled=not has_location):
+        if st.button("Discover listings", type="primary", key="save_new_search", disabled=not geometry):
             try:
-                geometry = st.session_state.get("new_area_geometry")
-                if not geometry and st.session_state.get("new_visible_bounds"):
-                    geometry = {"type": "bbox", **st.session_state["new_visible_bounds"]}
-                if not geometry:
-                    center = st.session_state.get("new_map_center", DEFAULT_CENTER)
-                    geometry = {
-                        "type": "bbox",
-                        "south": center[0] - 0.04,
-                        "north": center[0] + 0.04,
-                        "west": center[1] - 0.05,
-                        "east": center[1] + 0.05,
-                    }
-                normalized = normalize_geometry(geometry) if geometry else None
-                if not normalized:
-                    raise ValueError("Please lock or view the target map area before starting the search.")
-                label = destination.strip()
-                if not workspace_name.strip():
-                    name = make_search_slug(f"{label}_{check_in.strftime('%Y%m%d')}")
-                else:
-                    name = workspace_name.strip()
-                bounds = normalized["bounds"]
-                created = create_search_workspace(
+                bounds = normalize_geometry(geometry)["bounds"]
+                label, seed = locked_location or _map_search_location(bounds, lookup)
+                name = (workspace_name.strip() if not auto_name else
+                        _suggest_search_name(seed, [*existing_names, *list_available_searches()]))
+                create_search_workspace(
                     name=name,
                     check_in=check_in.isoformat(),
                     check_out=check_out.isoformat(),
@@ -814,7 +847,7 @@ def _new_search_form() -> None:
                 st.session_state["_pending_search_list_view"] = "Active"
                 st.session_state["new_area_geometry"] = None
                 st.session_state["new_map_area_locked"] = False
-                st.session_state["new_locked_bounds"] = None
+                st.session_state.pop("new_map_area_location", None)
                 st.success(f"Saved search '{name}'. Discovering listings; choose your price threshold next.")
                 st.rerun()
             except Exception as exc:
@@ -822,31 +855,35 @@ def _new_search_form() -> None:
 
     with col_right:
         is_locked = bool(st.session_state.get("new_map_area_locked", False))
-
-        area_btn_col, area_status_col = st.columns([1, 1])
+        area_btn_col, area_status_col = st.columns(2)
         with area_btn_col:
             if not is_locked:
-                if st.button("📍 Use Map Area", key="new_use_visible_area", disabled=not has_location, help="Lock the current visible map square as the search boundary."):
-                    bounds = st.session_state.get("new_visible_bounds")
-                    if bounds:
-                        st.session_state["new_locked_bounds"] = bounds
-                        st.session_state["new_area_geometry"] = {"type": "bbox", **bounds}
-                        st.session_state["new_map_area_locked"] = True
-                        st.rerun()
-                    else:
+                if st.button("📍 Use Map Area", key="new_use_visible_area",
+                             help="Lock the current map view as your search area and suggest a name."):
+                    if not visible_bounds:
                         st.info("Pan or zoom the map once so its visible bounds are registered.")
-            else:
-                if st.button("🔓 Unlock Map Area", key="new_unlock_area", help="Unlock the map area to pan or zoom again."):
-                    st.session_state["new_map_area_locked"] = False
-                    st.session_state["new_locked_bounds"] = None
-                    st.session_state["new_area_geometry"] = None
-                    st.rerun()
+                    else:
+                        area = {"type": "bbox", **visible_bounds}
+                        try:
+                            normalize_geometry(area)
+                        except ValueError as exc:
+                            st.warning(str(exc))
+                        else:
+                            st.session_state["new_map_area_location"] = _map_search_location(visible_bounds, lookup)
+                            st.session_state["new_area_geometry"] = area
+                            st.session_state["new_map_area_locked"] = True
+                            st.rerun()
+            elif st.button("🔓 Unlock Map Area", key="new_unlock_area", help="Choose a different map area."):
+                st.session_state["new_map_area_locked"] = False
+                st.session_state["new_area_geometry"] = None
+                st.session_state.pop("new_map_area_location", None)
+                st.rerun()
 
         with area_status_col:
             if is_locked:
                 st.success("🔒 Search area locked")
             else:
-                st.caption("Pan/zoom to adjust area, then click 'Use Map Area'.")
+                st.caption("Pan or zoom, then click Use Map Area.")
 
         if "new_map_center" not in st.session_state:
             st.session_state["new_map_center"] = (float(DEFAULT_CENTER[0]), float(DEFAULT_CENTER[1]))
@@ -868,7 +905,6 @@ def _new_search_form() -> None:
             visible_bounds = bounds_from_event(area_event)
             if visible_bounds:
                 st.session_state["new_visible_bounds"] = visible_bounds
-
 
 
 def _map_center(event: Dict[str, Any], fallback: Tuple[float, float]) -> Tuple[float, float]:
@@ -1005,7 +1041,7 @@ def _render_discovery_section(search_name, snapshot, profile_name, profile, list
                                   'reason': 'Enable this saved search to collect listings.'}
             snapshot = {**snapshot, 'stages': stages}
         _render_pipeline_stages(search_name=search_name, snapshot=snapshot,
-            profile_saved=True, profile_name=profile_name, profile=profile,
+            profile=profile,
             listing_count=listing_count, jobs=_service("src.job_service"),
             active=_pipeline_is_active(snapshot), visible_stage_keys=("discover",), show_summary=False)
     active, status_error = _search_job_is_active(search_name)
@@ -1018,6 +1054,7 @@ def _render_discovery_section(search_name, snapshot, profile_name, profile, list
                 st.rerun()
             except Exception as exc:
                 st.error(f"Could not refresh discovery: {exc}")
+    _render_price_refresh(search_name, snapshot or {}, _service("src.job_service"), active or status_error or archived)
     st.caption("Updates: refresh discovery here to update the histogram; adjust the budget in step 2 to widen or narrow the selection. Existing evidence is retained.")
 
 
@@ -1039,16 +1076,19 @@ def _render_price_selection(search_name: str, definition: Optional[Dict[str, Any
     all_prices = st.checkbox("Process all prices", value=bool(saved and saved.get('max_total') is None), key=f"process_all_prices_{search_name}", disabled=active)
     histogram = st.empty()
     from src.processing_service import price_slider_limits
-    slider_key = f"processing_max_slider_{search_name}_{definition['trip_revision']}"
-    lower, upper, initial = price_slider_limits(prices, saved.get('max_total') if saved else None,
-                                               st.session_state.get(slider_key))
-    maximum = st.slider(f"Maximum total stay price ({definition['currency']})", min_value=lower,
-                        max_value=upper, value=initial, step=50, key=slider_key,
+    slider_key = f"processing_range_slider_{search_name}_{definition['trip_revision']}"
+    current_range = st.session_state.get(slider_key)
+    saved_minimum = int(np.ceil(float(saved.get('min_total', 0)) / 50) * 50) if saved else 0
+    _, upper, initial = price_slider_limits(prices, saved.get('max_total') if saved else None,
+                                           max(current_range) if current_range else saved_minimum)
+    initial = max(initial, saved_minimum)
+    minimum, maximum = st.slider(f"Total stay price range ({definition['currency']})", min_value=0,
+                        max_value=upper, value=(saved_minimum, initial), step=50, key=slider_key,
                         disabled=active or all_prices, format="%d")
     if not prices.empty:
         import altair as alt
         counts, edges = np.histogram(prices.to_numpy(), bins=min(20, max(1, int(np.sqrt(len(prices))))))
-        included, _ = np.histogram(prices[prices.le(maximum) | all_prices].to_numpy(), bins=edges)
+        included, _ = np.histogram(prices[prices.between(minimum, maximum) | all_prices].to_numpy(), bins=edges)
         bins = pd.DataFrame({'From': edges[:-1], 'To': edges[1:], 'Included': included, 'Excluded': counts-included})
         bars = alt.Chart(bins).transform_fold(['Included', 'Excluded'], as_=['Selection', 'Properties']).mark_bar().encode(
             x=alt.X('From:Q', bin='binned', title=f'Total stay price ({definition["currency"]})'),
@@ -1057,12 +1097,13 @@ def _render_price_selection(search_name: str, definition: Optional[Dict[str, Any
             tooltip=['From:Q', 'To:Q', 'Selection:N', 'Properties:Q'],
         )
         if not all_prices:
-            line = alt.Chart(pd.DataFrame({'Threshold': [maximum]})).mark_rule(color='#b74b35', strokeWidth=2).encode(x='Threshold:Q')
+            line = alt.Chart(pd.DataFrame({'Threshold': [minimum, maximum]})).mark_rule(color='#b74b35', strokeWidth=2).encode(x='Threshold:Q')
             bars = bars + line
         histogram.altair_chart(bars, use_container_width=True)
     st.caption(f"{summary['current_count']} currently returned · {len(prices)} usable total-stay quotes · {summary['unknown_count']} unknown/unverified. Histogram uses the latest usable stay quotes for these dates and guests (initially from discovery).")
     unknown = st.checkbox("Also fetch properties with unknown/unverified prices", value=bool(saved and saved.get('include_unknown')), key=f"processing_unknown_{search_name}", disabled=active)
-    candidate = {'max_total': None if all_prices else float(maximum), 'include_unknown': unknown}
+    candidate = {'min_total': 0.0 if all_prices else float(minimum),
+                 'max_total': None if all_prices else float(maximum), 'include_unknown': unknown}
     chosen = select_properties(frame, definition, candidate)
     st.caption(f"{len(chosen['selected_ids'])} selected for processing · {chosen['excluded_count']} outside this selection. Existing details, reviews and AI assessments are retained when you change the threshold.")
     if not data.empty and 'room_id' in data:
@@ -1077,14 +1118,17 @@ def _render_price_selection(search_name: str, definition: Optional[Dict[str, Any
 NEW_PRIORITY_PROFILE = "＋ New profile"
 
 
+PROFILE_WEIGHT_COLUMNS = dict(zip(PRIORITY_LABELS, (
+    "Clean", "Quiet", "Beds", "Transit", "Bath", "Temp", "Wi-Fi", "Value",
+)))
+
+
 def _prime_priority_selection(service: Any, search_name: str) -> str:
     key = f"profile_select_{search_name}"
     if not callable(getattr(service, 'list_priority_profiles', None)):
         return str(st.session_state.get(key, 'Default'))
     names = [profile['name'] for profile in service.list_priority_profiles()]
     chosen = st.session_state.get(key)
-    if chosen == NEW_PRIORITY_PROFILE:
-        return 'Default'
     if chosen not in names:
         chosen = names[0] if names else NEW_PRIORITY_PROFILE
         st.session_state[key] = chosen
@@ -1094,132 +1138,196 @@ def _prime_priority_selection(service: Any, search_name: str) -> str:
     return 'Default'
 
 
-def _render_profile_editor(search_name: str, *, hard_filters: Optional[Dict[str, Any]] = None, can_run: bool = True, processing_selection: Optional[Dict[str, Any]] = None) -> Tuple[str, bool]:
-    """Collect saved evaluation priorities before enabling an AI job."""
+def _render_priority_table(search_name: str, profiles: Sequence[Dict[str, Any]], selected: str) -> None:
+    names = [profile["name"] for profile in profiles]
+    rows = [{
+        "Use": "",
+        "Profile": profile["name"],
+        **{column: profile["weights"].get(key, 3) for key, column in PROFILE_WEIGHT_COLUMNS.items()},
+        "Instructions": profile.get("additional_instructions", ""),
+    } for profile in profiles]
+    frame = pd.DataFrame(rows)
+    builder = GridOptionsBuilder.from_dataframe(frame)
+    builder.configure_default_column(editable=False, sortable=False, resizable=True, flex=1, minWidth=60)
+    builder.configure_selection(selection_mode="single", use_checkbox=True, suppressRowDeselection=True)
+    builder.configure_column("Use", width=52, minWidth=52, maxWidth=52, flex=0, pinned="left")
+    builder.configure_column("Profile", flex=2, minWidth=105, tooltipField="Profile")
+    for key, column in PROFILE_WEIGHT_COLUMNS.items():
+        builder.configure_column(column, headerTooltip=PRIORITY_LABELS[key])
+    builder.configure_column("Instructions", flex=2, minWidth=105, tooltipField="Instructions")
+    options = builder.build()
+    options["getRowId"] = JsCode("function(params) { return params.data.Profile; }")
+    options["initialState"] = {"rowSelection": [selected]}
+    options.update(rowHeight=30, headerHeight=32)
+    selection_key = hashlib.sha256(json.dumps([selected, *names]).encode()).hexdigest()[:12]
+    response = AgGrid(
+        frame, gridOptions=options, height=min(216, 35 + 30 * len(frame)),
+        key=f"priority_table_{search_name}_{selection_key}", update_mode=GridUpdateMode.NO_UPDATE,
+        update_on=["selectionChanged"], allow_unsafe_jscode=True, enable_enterprise_modules=False,
+        theme=AgGridTheme.STREAMLIT,
+    )
+    if "selectionchanged" in _grid_event_type(response.event_data):
+        checked = response.selected_rows
+        if checked is not None and not checked.empty:
+            name = checked.iloc[0]["Profile"]
+            if name in names and name != selected:
+                st.session_state[f"profile_select_{search_name}"] = name
+                st.session_state.pop(f"priority_editor_{search_name}", None)
+                st.session_state.pop(f"delete_priority_requested_{search_name}", None)
+                st.rerun()
+
+
+def _render_priority_draft(service, search_name, selected, profiles, mode, shared_profiles) -> None:
+    adding = mode == "add"
+    source = service.default_evaluation_profile() if adding else next(p for p in profiles if p["name"] == selected)
+    scope = f"{search_name}_{NEW_PRIORITY_PROFILE if adding else selected}"
+    with st.form(f"priority_draft_{scope}"):
+        name = st.text_input("Profile name", value="" if adding else selected, max_chars=80,
+                             key=f"profile_name_{scope}").strip()
+        weights = st.data_editor(
+            pd.DataFrame([{column: source["weights"].get(key, 3) for key, column in PROFILE_WEIGHT_COLUMNS.items()}]),
+            column_config={
+                column: st.column_config.NumberColumn(
+                    help=PRIORITY_LABELS[key], min_value=0, max_value=5, step=1, required=True,
+                )
+                for key, column in PROFILE_WEIGHT_COLUMNS.items()
+            },
+            hide_index=True, use_container_width=True, key=f"priority_weights_{scope}",
+        )
+        instructions = st.text_area("Additional instructions", value=source.get("additional_instructions", ""),
+                                    height=70, key=f"instructions_{scope}")
+        st.caption("Weights: 0 ignores a criterion, 5 gives it the highest priority. Use a new name to save a copy.")
+        save_col, cancel_col, _ = st.columns([2, 1, 4])
+        save = save_col.form_submit_button("Save profile", type="primary")
+        cancel = cancel_col.form_submit_button("Cancel")
+    editor_key = f"priority_editor_{search_name}"
+    if cancel:
+        st.session_state.pop(editor_key, None)
+        st.rerun()
+    if save:
+        try:
+            if not name:
+                raise ValueError("Enter a profile name.")
+            if (adding or name != selected) and any(profile["name"] == name for profile in profiles):
+                raise ValueError("A profile with that name already exists.")
+            values = {key: int(weights.iloc[0][column]) for key, column in PROFILE_WEIGHT_COLUMNS.items()}
+            if shared_profiles:
+                service.save_priority_profile(name, values, instructions,
+                                              model_name=source.get("model_name"), reasoning_effort=source.get("reasoning_effort"))
+                service.use_priority_profile(search_name, name)
+            else:
+                service.save_evaluation_profile(search_name, name, values, instructions, hard_filters=source.get("hard_filters"))
+            st.session_state[f"profile_select_{search_name}"] = name
+            st.session_state.pop(editor_key, None)
+            st.rerun()
+        except Exception as exc:
+            st.error(f"Could not save the profile: {exc}")
+
+
+def _render_profile_editor(search_name: str, *, can_run: bool = True, processing_selection: Optional[Dict[str, Any]] = None,
+                           snapshot: Optional[Dict[str, Any]] = None) -> str:
+    """Select a saved profile, opening the editor only on demand."""
     try:
         service = _service("src.evaluation_service")
-    except ImportError:
-        st.warning("Evaluation profiles are not available in this build yet.")
-        return "Default", False
-    shared_profiles = callable(getattr(service, 'list_priority_profiles', None))
-    try:
+        shared_profiles = callable(getattr(service, 'list_priority_profiles', None))
         if shared_profiles:
-            _prime_priority_selection(service, search_name)
-            stored_profiles = [profile['name'] for profile in service.list_priority_profiles()]
-            profiles = [*stored_profiles, NEW_PRIORITY_PROFILE]
-            selected = st.selectbox("Evaluation profile", profiles,
-                                    index=profiles.index(st.session_state.get(f"profile_select_{search_name}")) if st.session_state.get(f"profile_select_{search_name}") in profiles else 0,
-                                    key=f"profile_select_{search_name}")
-            saved = service.default_evaluation_profile() if selected == NEW_PRIORITY_PROFILE else service.load_priority_profile(selected)
+            profiles = service.list_priority_profiles()
         else:
-            stored_profiles = service.list_evaluation_profiles(search_name)
-            profiles = stored_profiles or ["Default"]
-            selected = st.selectbox("Evaluation profile", profiles,
-                                    index=profiles.index(st.session_state.get(f"profile_select_{search_name}")) if st.session_state.get(f"profile_select_{search_name}") in profiles else 0,
-                                    key=f"profile_select_{search_name}")
-            saved = service.load_evaluation_profile(search_name, selected)
+            profiles = [service.load_evaluation_profile(search_name, name)
+                        for name in service.list_evaluation_profiles(search_name)]
     except Exception as exc:
-        st.error(f"Could not load evaluation profile: {exc}")
-        return 'Default', False
-    existing_weights = saved.get("weights", {}) if isinstance(saved, dict) else {}
-    existing_hard = saved.get("hard_filters", {}) if isinstance(saved, dict) else {}
-    profile_file = Path(service.PROJECT_ROOT) / "searches" / search_name / "evaluation_profiles.json"
-    with st.expander("AI evaluation priorities", expanded=shared_profiles or not profile_file.exists()):
-        profile_widget_scope = f"{search_name}_{selected}"
-        name_col, delete_col = st.columns([3, 1])
-        profile_name = name_col.text_input("Profile name", value='' if selected == NEW_PRIORITY_PROFILE else selected,
-                                          key=f"profile_name_{profile_widget_scope}", placeholder="City, Beach, Enrica…")
-        if shared_profiles:
-            if _colored_button(delete_col, "Delete profile", key=f"delete_profile_{search_name}", disabled=selected == NEW_PRIORITY_PROFILE):
-                st.session_state[f"delete_priority_requested_{search_name}"] = selected
-            if st.session_state.get(f"delete_priority_requested_{search_name}") == selected:
-                st.caption(f"Delete saved profile ‘{selected}’? Previous search evaluations will be retained.")
-                confirm_col, cancel_col = st.columns(2)
-                if _colored_button(confirm_col, "Confirm delete profile", key=f"confirm_delete_profile_{search_name}"):
-                    service.delete_priority_profile(selected)
-                    remaining = service.list_priority_profiles()
-                    st.session_state[f"_pending_profile_select_{search_name}"] = remaining[0]['name'] if remaining else NEW_PRIORITY_PROFILE
-                    st.session_state.pop(f"delete_priority_requested_{search_name}", None)
-                    st.rerun()
-                if cancel_col.button("Cancel", key=f"cancel_delete_profile_{search_name}"):
-                    st.session_state.pop(f"delete_priority_requested_{search_name}", None)
-                    st.rerun()
-            st.caption("Profiles are reusable across searches. Change the name to save a copy; saving the same name updates it.")
-        weights: Dict[str, int] = {}
-        weight_columns = st.columns(3)
-        for position, (key, label) in enumerate(PRIORITY_LABELS.items()):
-            value = existing_weights.get(key, 3)
+        st.error(f"Could not load evaluation profiles: {exc}")
+        return "Default"
+
+    names = [profile["name"] for profile in profiles]
+    selected = st.session_state.get(f"profile_select_{search_name}", "Default")
+    if names:
+        selected = selected if selected in names else names[0]
+        st.markdown(f"**Evaluation profiles** · Using **{selected}**")
+        _render_priority_table(search_name, profiles, selected)
+    else:
+        st.markdown("**Evaluation profiles**")
+        st.caption("Add a profile to set the priorities you want to reuse.")
+    chosen = selected in names
+    editor_key = f"priority_editor_{search_name}"
+    delete_key = f"delete_priority_requested_{search_name}"
+    add_col, edit_col, delete_col, _ = st.columns([1, 1, 1, 4])
+    if add_col.button("Add", key=f"add_profile_{search_name}"):
+        st.session_state[editor_key] = "add"
+        st.session_state.pop(delete_key, None)
+    if edit_col.button("Edit", key=f"edit_profile_{search_name}", disabled=not chosen):
+        st.session_state[editor_key] = "edit"
+        st.session_state.pop(delete_key, None)
+    if _colored_button(delete_col, "Delete", key=f"delete_profile_{search_name}", disabled=not (shared_profiles and chosen)):
+        st.session_state[delete_key] = selected
+        st.session_state.pop(editor_key, None)
+
+    if chosen and st.session_state.get(delete_key) == selected:
+        st.caption(f"Delete the reusable profile ‘{selected}’? Previous evaluations are retained.")
+        confirm, cancel, _ = st.columns([2, 1, 4])
+        if _colored_button(confirm, "Confirm delete", key=f"confirm_delete_profile_{search_name}"):
             try:
-                value = int(value)
-            except (ValueError, TypeError):
-                value = 3
-            weights[key] = int(weight_columns[position % 3].number_input(label, min_value=0, max_value=5, value=max(0, min(5, value)), step=1, key=f"weight_{profile_widget_scope}_{key}"))
-        instructions = st.text_area(
-            "Additional instructions",
-            value=str(saved.get("additional_instructions", "")) if isinstance(saved, dict) else "",
-            height=90,
-            key=f"instructions_{profile_widget_scope}",
-            placeholder="For example: street noise matters more than decor; stairs are acceptable.",
-        )
-        st.caption("0 ignores a criterion; 5 gives it the highest importance. Presentation filters are available in the standalone webpage.")
-    save_clicked = st.button("Save evaluation profile", type="primary", key=f"save_profile_{search_name}", disabled=shared_profiles and not profile_name.strip())
+                service.delete_priority_profile(selected)
+                st.session_state.pop(f"profile_select_{search_name}", None)
+                st.session_state.pop(delete_key, None)
+                st.rerun()
+            except Exception as exc:
+                st.error(f"Could not delete the profile: {exc}")
+        if cancel.button("Cancel", key=f"cancel_delete_profile_{search_name}"):
+            st.session_state.pop(delete_key, None)
+            st.rerun()
+
+    mode = st.session_state.get(editor_key)
+    if mode == "add" or (mode == "edit" and chosen):
+        _render_priority_draft(service, search_name, selected, profiles, mode, shared_profiles)
+
+    profile_file = Path(service.PROJECT_ROOT) / "searches" / search_name / "evaluation_profiles.json"
+    saved = chosen and (shared_profiles or profile_file.exists())
     st.subheader("3. Prepare selected properties")
     st.caption("Fetch details and recent reviews, then evaluate with your saved priorities. The run continues automatically with bounded retries; recent saved work is reused.")
     run_options = _automatic_run_options(search_name)
     active_job, status_error = _search_job_is_active(search_name)
-    run_clicked = st.button("Fetch selected + evaluate", key=f"run_all_{search_name}", type="primary",
-                                 disabled=(shared_profiles and not profile_name.strip()) or not can_run or active_job or status_error or not processing_selection or not processing_selection.get("selected_count"),
-                                 help="Saves the threshold and priorities, then fetches and evaluates only selected properties. Fresh evidence is reused for 30 days.")
-    if save_clicked or run_clicked:
+    from src.processing_service import load_selection, save_selection
+    from src.search_service import SEARCHES_ROOT
+    definition = _active_definition(search_name)
+    directory = Path(SEARCHES_ROOT) / search_name
+    committed = load_selection(directory, definition) if definition and processing_selection else None
+    same_selection = bool(committed and processing_selection and all(
+        committed.get(key, default) == processing_selection.get(key, default)
+        for key, default in (("min_total", 0), ("max_total", None), ("include_unknown", False))
+    ))
+    stages = (snapshot or {}).get("stages", {})
+    collection = stages.get("details", {})
+    evaluation = stages.get("evaluate", {})
+    stage = "prepare"
+    action = "Fetch selected + evaluate"
+    if same_selection and evaluation.get("can_start") and collection.get("state") in {"success", "partial", "failed", "cancelled"}:
+        stage = "evaluate"
+        action = ("Retry evaluation" if evaluation.get("failed")
+                  else "Evaluate ready listings" if collection.get("state") != "success"
+                  else "Evaluate listings")
+    elif same_selection and collection.get("state") in {"partial", "failed", "cancelled"}:
+        action = "Retry preparation"
+    if st.button(action, key=f"run_all_{search_name}", type="primary",
+                 disabled=not chosen or bool(mode) or not can_run or active_job or status_error
+                 or not processing_selection or not processing_selection.get("selected_count"),
+                 help="Uses the checked profile and reuses saved collection and evaluation work."):
         try:
-            if shared_profiles:
-                service.save_priority_profile(profile_name.strip(), weights, instructions,
-                                              model_name=saved.get('model_name'), reasoning_effort=saved.get('reasoning_effort'))
-            service.save_evaluation_profile(
-                search_name,
-                profile_name.strip() or "Default",
-                weights,
-                instructions,
-                hard_filters={**existing_hard, **(hard_filters or {})},
-            )
-            st.session_state[f"profile_saved_{search_name}"] = True
-            st.session_state[f"profile_saved_name_{search_name}"] = profile_name.strip() or "Default"
-            st.session_state[f"_pending_profile_select_{search_name}"] = profile_name.strip() or "Default"
-            if run_clicked:
-                from src.processing_service import save_selection
-                from src.search_service import SEARCHES_ROOT
-                definition = _active_definition(search_name)
-                save_selection(Path(SEARCHES_ROOT) / search_name, definition, processing_selection)
-                jobs = _service("src.job_service")
-                jobs.start_search_job(search_name, "prepare", profile_name=profile_name.strip() or "Default", run_options=run_options)
-            st.success("Preparation started; collection and AI will continue automatically." if run_clicked else "Priority profile saved. Use Fetch selected + evaluate in step 3 when ready.")
+            if not saved:  # Older workspaces can offer a Default that has never been saved.
+                profile = service.load_evaluation_profile(search_name, selected)
+                service.save_evaluation_profile(search_name, selected, profile["weights"],
+                                                profile["additional_instructions"], hard_filters=profile.get("hard_filters"))
+            if stage == "prepare":
+                save_selection(directory, definition, processing_selection)
+            _service("src.job_service").start_search_job(search_name, stage, profile_name=selected, run_options=run_options)
             st.rerun()
         except Exception as exc:
-            st.error(f"Could not save priorities or start the run: {exc}")
-    chosen_profile = str(selected)
-    exists_saved_profile = (profile_file.exists() and chosen_profile in stored_profiles) or bool(
-        st.session_state.get(f"profile_saved_{search_name}") and st.session_state.get(f"profile_saved_name_{search_name}") == chosen_profile
-    )
-    saved_weight_values: Dict[str, int] = {}
-    for key in PRIORITY_LABELS:
-        try:
-            saved_value = int(existing_weights.get(key, 3))
-        except (ValueError, TypeError):
-            saved_value = 3
-        saved_weight_values[key] = max(0, min(5, saved_value))
-    weights_match = weights == saved_weight_values
-    instructions_match = instructions == str(saved.get("additional_instructions", ""))
-    name_matches = profile_name.strip() == chosen_profile
-    hard_filters_match = all((existing_hard or {}).get(key) == value for key, value in (hard_filters or {}).items())
-    is_saved = bool(exists_saved_profile and weights_match and instructions_match and name_matches and hard_filters_match)
-    if not is_saved:
-        st.info("Your search is saved. Fetch selected + evaluate saves the threshold and these priorities, then processes the selection automatically.")
-    return chosen_profile, is_saved
+            st.error(f"Could not start {action.lower()}: {exc}")
+    return selected if chosen else "Default"
 
 
 def _render_job_controls(
     search_name: str,
-    profile_saved: bool,
     profile_name: str,
     profile: Optional[Dict[str, Any]] = None,
     listing_count: int = 0,
@@ -1277,46 +1385,24 @@ def _render_job_controls(
         _render_pipeline_stages(
             search_name=search_name,
             snapshot=snapshot,
-            profile_saved=profile_saved,
-            profile_name=profile_name,
             profile=profile,
             listing_count=listing_count,
             jobs=jobs,
             active=is_active,
             visible_stage_keys=("details", "evaluate"),
         )
-        _render_secondary_job_controls(
-            search_name=search_name,
-            profile_saved=profile_saved,
-            profile_name=profile_name,
-            snapshot=snapshot,
-            jobs=jobs,
-            active=is_active,
-        )
+        if is_active and _colored_button(st, "Cancel active job", key=f"cancel_job_{search_name}"):
+            try:
+                jobs.cancel_search_job(search_name)
+                st.rerun(scope="app")
+            except Exception as exc:
+                st.error(f"Cancellation could not be requested: {exc}")
 
     render_pipeline_fragment()
 
 
-def _render_secondary_job_controls(
-    *,
-    search_name: str,
-    profile_saved: bool,
-    profile_name: str,
-    snapshot: Dict[str, Any],
-    jobs: Any,
-    active: bool,
-) -> None:
-    """Keep status refresh, cancellation and optional jobs synchronized with polling."""
-    controls_left, controls_right = st.columns([1, 1])
-    if controls_left.button("Refresh pipeline status", key=f"poll_job_{search_name}", use_container_width=True):
-        st.rerun(scope="app")
-    if _colored_button(controls_right, "Cancel active job", key=f"cancel_job_{search_name}", disabled=not active, use_container_width=True):
-        try:
-            jobs.cancel_search_job(search_name)
-            st.rerun(scope="app")
-        except Exception as exc:
-            st.error(f"Cancellation could not be requested: {exc}")
-
+def _render_price_refresh(search_name: str, snapshot: Dict[str, Any], jobs: Any, disabled: bool) -> None:
+    """Keep the optional price-only refresh with other search updates."""
     with st.expander("Update collected prices", expanded=False):
         st.caption("Recheck prices and availability for the saved processing selection. Recent property information and reviews are reused; this does not run AI. To change the returned listings or histogram, use Refresh listings + prices in step 1.")
         has_discovery = _status_count((snapshot.get("stages") or {}).get("discover", {}).get("count"))
@@ -1327,7 +1413,7 @@ def _render_secondary_job_controls(
         if not has_selection:
             st.caption("Choose your budget in step 2 and start preparation in step 3 before updating selected prices.")
         if st.button("Refresh prices + availability", key=f"start_{search_name}_refresh",
-                     disabled=active or not has_discovery or not has_selection, use_container_width=True):
+                     disabled=disabled or not has_discovery or not has_selection, use_container_width=True):
             try:
                 jobs.start_search_job(search_name, "refresh", run_options={})
                 st.rerun(scope="app")
@@ -1513,7 +1599,7 @@ def _render_stage_counts(stage_key: str, stage: Dict[str, Any], active_job: Opti
         if (active_job or {}).get('status') in {'running', 'queued'} and active_stage == stage_key:
             st.warning('The provider rate limited this stage. Checkpoints are saved; the worker is checking or resuming remaining work.')
         else:
-            st.warning('The provider rate limited this stage. No automatic retry is scheduled. Checkpoints are saved; use Retry to resume remaining work.')
+            st.warning('The provider rate limited this stage. No automatic retry is scheduled. Checkpoints are saved. Retry preparation to resume remaining work.')
     if reason and stage.get("state") in {"blocked", "failed", "cancelled", "stale", "partial", "no_matches"}:
         st.caption(str(reason))
     if message and stage.get("state") in {"failed", "cancelled", "partial", "no_matches"} and message != reason:
@@ -1524,8 +1610,6 @@ def _render_pipeline_stages(
     *,
     search_name: str,
     snapshot: Dict[str, Any],
-    profile_saved: bool,
-    profile_name: str,
     profile: Optional[Dict[str, Any]],
     listing_count: int,
     jobs: Any,
@@ -1544,26 +1628,19 @@ def _render_pipeline_stages(
             st.info(f"Running now: {label}. {countdown or active_job.get('message') or ''}".strip())
         elif active:
             st.info("A background stage is running.")
-        elif next_stage in {"discover", "details", "evaluate"}:
-            next_details = stages.get(next_stage) or {}
-            reason = next_details.get("reason")
-            if next_stage == "evaluate" and not profile_saved:
-                reason = "Click Save evaluation profile above before evaluating with this profile."
-            st.info(f"Next action: {_stage_title(next_stage)}." + (f" {reason}" if reason else ""))
-        elif all(str((stages.get(key) or {}).get("state", "")).lower() == "success" for key in ("discover", "details", "evaluate")):
+        elif all((stages.get(key) or {}).get("state") == "success" for key in ("discover", "details", "evaluate")):
             st.success("Preparation is complete for the current trip and profile. Continue to step 4 to review and share.")
-        else:
-            blocked = next((str((stages.get(key) or {}).get("reason")) for key in ("discover", "details", "evaluate") if (stages.get(key) or {}).get("reason")), None)
-            st.info(f"No next stage is ready yet. {blocked or 'Check the stage status below.'}")
+        elif snapshot.get("pending_collection_room_ids") and (stages.get("evaluate") or {}).get("state") == "success":
+            st.info("AI evaluated all ready listings. Retry preparation for the listings marked with an asterisk.")
 
     columns = st.columns(len(visible_stage_keys))
     definitions = [
-        (1, "discover", "Discover listings", "Find listings inside the saved search area."),
-        (2, "details", "Fetch details + reviews", "Collect listing details and review evidence."),
-        (3, "evaluate", "AI evaluation", "Score evidence using the selected saved profile."),
+        ("discover", "Discover listings", "Find listings inside the saved search area."),
+        ("details", "Fetch details + reviews", "Collect listing details and review evidence."),
+        ("evaluate", "AI evaluation", "Score evidence using the selected saved profile."),
     ]
-    definitions = [entry for entry in definitions if entry[1] in visible_stage_keys]
-    for column, (number, stage_key, title, description) in zip(columns, definitions):
+    definitions = [entry for entry in definitions if entry[0] in visible_stage_keys]
+    for column, (stage_key, title, description) in zip(columns, definitions):
         stage = stages.get(stage_key) if isinstance(stages.get(stage_key), dict) else {}
         state = str(stage.get("state", "blocked")).lower()
         is_next = stage_key == next_stage
@@ -1593,38 +1670,14 @@ def _render_pipeline_stages(
                 st.caption(
                     f"Model: {effective_profile.get('model_name') or 'provider default'} · "
                     f"reasoning effort: {effective_profile.get('reasoning_effort') or 'provider default'} · "
-                    f"scope: {scope_count} selected listings · {listing_count} in the saved results."
+                    f"{scope_count} ready for AI · {listing_count} in the saved results."
                 )
             _render_stage_counts(stage_key, stage, active_job)
-            if stage_key == 'discover' and state == 'success':
-                continue  # Refresh is the single useful action for completed discovery.
-            allowed = bool(stage.get("can_start")) and is_next and not active
-            disabled_reason = str(stage.get("reason") or "Complete the previous step first.")
-            if stage_key in {'details', 'evaluate'}:
-                from src.processing_service import load_selection
-                from src.search_service import SEARCHES_ROOT
-                current_definition = _active_definition(search_name)
-                committed_selection = load_selection(Path(SEARCHES_ROOT) / search_name, current_definition) if current_definition else None
-                if committed_selection is None:
-                    allowed = False
-                    disabled_reason = 'Choose your budget in step 2, then use Fetch selected + evaluate in step 3.'
-            if stage_key == "evaluate" and not profile_saved:
-                allowed = False
-                disabled_reason = "Click Save evaluation profile above before evaluating."
-            if active:
-                allowed = False
-                disabled_reason = "Wait for the active background job to finish."
-            if state == "success":
-                allowed = False
-                disabled_reason = "This step is complete; continue to the next step."
-            if state in {"partial", "failed", "cancelled", "stale", "no_matches"} and bool(stage.get("can_start")) and is_next:
-                button_label = f"Retry {title.lower()}"
-            elif is_next:
-                button_label = title if stage_key != "evaluate" else "Evaluate with AI"
-            elif state == "success":
-                button_label = "Complete"
-            else:
-                button_label = "Locked"
+            if stage_key != "discover" or state == "success":
+                continue
+            allowed = bool(stage.get("can_start")) and not active
+            disabled_reason = "Wait for the active job to finish." if active else stage.get("reason")
+            button_label = "Retry discovery" if state in {"partial", "failed", "cancelled", "no_matches"} else title
             if st.button(
                 button_label,
                 key=f"pipeline_step_{search_name}_{stage_key}",
@@ -1634,21 +1687,10 @@ def _render_pipeline_stages(
                 help=None if allowed else disabled_reason,
             ):
                 try:
-                    if stage_key == "evaluate":
-                        jobs.start_search_job(search_name, "evaluate", profile_name=profile_name)
-                    else:
-                        jobs.start_search_job(search_name, stage_key)
+                    jobs.start_search_job(search_name, "discover", run_options={})
                     st.rerun()
                 except Exception as exc:
                     st.error(f"Could not start {title.lower()}: {exc}")
-
-
-def _stage_title(stage_key: str) -> str:
-    return {
-        "discover": "Discover listings",
-        "details": "Fetch details + reviews",
-        "evaluate": "AI evaluation",
-    }.get(stage_key, stage_key.replace("_", " ").title())
 
 
 def _trip_summary(definition: Optional[Dict[str, Any]], search_name: str) -> str:
@@ -2098,6 +2140,9 @@ def _render_grid(
         ) if column in shown.columns
     ]
     grid_data = shown[display_columns].copy()
+    if "name" in grid_data and "collection_pending" in shown:
+        pending = shown["collection_pending"].fillna(False)
+        grid_data.loc[pending, "name"] = grid_data.loc[pending, "name"].fillna("Listing").astype(str) + " *"
     if "room_id" in grid_data.columns:
         grid_data.index = grid_data["room_id"].astype(str)
     grid_data = grid_data.rename(columns={
@@ -2248,9 +2293,6 @@ def _render_existing_search(search_name: str, *, archived: bool = False) -> None
     start_error = st.session_state.pop(f"automatic_start_error_{search_name}", None)
     if start_error:
         st.error(f"Search saved, but discovery could not start: {start_error}. Use Refresh listings + prices after correcting the problem.")
-    pending_profile_name = st.session_state.pop(f"_pending_profile_select_{search_name}", None)
-    if pending_profile_name:
-        st.session_state[f"profile_select_{search_name}"] = pending_profile_name
     try:
         config = load_search_config(search_name)
     except Exception as exc:
@@ -2303,7 +2345,9 @@ def _render_existing_search(search_name: str, *, archived: bool = False) -> None
     _render_discovery_section(search_name, initial_snapshot, current_profile_name, persisted_profile, len(data), archived=archived)
     st.subheader("2. Budget and priorities")
     processing_selection = _render_price_selection(search_name, definition, data)
-    profile_name, profile_saved = _render_profile_editor(search_name, can_run=not archived, processing_selection=processing_selection)
+    profile_name = _render_profile_editor(
+        search_name, can_run=not archived, processing_selection=processing_selection, snapshot=initial_snapshot,
+    )
     try:
         effective_profile = evaluation_service.load_evaluation_profile(search_name, profile_name)
     except Exception:
@@ -2311,7 +2355,7 @@ def _render_existing_search(search_name: str, *, archived: bool = False) -> None
     if archived:
         st.info("This search is archived. Restore it to collect listings or run AI evaluation; saved results remain available to browse.")
     else:
-        _render_job_controls(search_name, profile_saved, profile_name, effective_profile, len(data),
+        _render_job_controls(search_name, profile_name, effective_profile, len(data),
                              initial_snapshot=initial_snapshot if profile_name == current_profile_name else None)
 
     with st.expander("Collector capability and coverage", expanded=False):
@@ -2331,6 +2375,11 @@ def _render_existing_search(search_name: str, *, archived: bool = False) -> None
         _render_hidden_drawer(search_name, pd.DataFrame())
         return
 
+    pending = set((initial_snapshot or {}).get("pending_collection_room_ids", []))
+    collection_state = ((initial_snapshot or {}).get("stages", {}).get("details") or {}).get("state")
+    if pending and collection_state in {"running", "partial", "failed", "cancelled"}:
+        data = data.assign(collection_pending=data["room_id"].astype(str).isin(pending))
+        st.caption("* Details or reviews are pending. Retry preparation to fill the gaps.")
     _render_report_export(search_name, data, definition, effective_profile, curation)
     browse = st.checkbox("Show in-app property browser (optional)", value=False, key=f"browse_properties_{search_name}")
     filters = _render_filters(search_name, definition, data, profile_hard_defaults, profile_name, browse=browse)
@@ -2647,7 +2696,7 @@ def _search_table_rows(summaries: Sequence[Dict[str, Any]]) -> pd.DataFrame:
             "Last updated": _readable_catalog_datetime(updated) if updated else "—",
             "Search": item["name"],
         })
-    return pd.DataFrame(rows, columns=["Location", "Stay dates", "People", "Properties", "Last updated", "Search"])
+    return pd.DataFrame(rows, columns=["Search", "Location", "Stay dates", "People", "Last updated", "Properties"])
 
 
 def _apply_search_table_event(response: Any, names: Sequence[str]) -> bool:
@@ -2687,8 +2736,9 @@ def _render_search_table(summaries: Sequence[Dict[str, Any]], table_key: str) ->
     builder.configure_column("Delete", header_name="Delete", width=85, minWidth=85, maxWidth=85,
                              pinned="left", sortable=False, checkboxSelection=True,
                              headerCheckboxSelection=True)
-    builder.configure_column("Stay dates", width=190)
-    builder.configure_column("Last updated", width=185)
+    builder.configure_column("Search", width=150)
+    builder.configure_column("Stay dates", width=165)
+    builder.configure_column("Last updated", width=150)
     builder.configure_column("Location", width=125)
     builder.configure_column("People", width=80)
     builder.configure_column("Properties", width=95)
@@ -2788,7 +2838,7 @@ def render_browser_app() -> None:
     st.set_page_config(page_title="Airbnb Analyzer", page_icon="🏠", layout="wide", initial_sidebar_state="expanded")
     button_css = (Path(__file__).parent / "assets" / "buttons.css").read_text(encoding="utf-8")
     st.markdown(f"<style>{button_css}</style>", unsafe_allow_html=True)
-    st.title("Airbnb Analyzer")
+    st.markdown(f'<h1 style="margin:0;padding:0">{github_logo_link()}</h1>', unsafe_allow_html=True)
     panel_open = st.session_state.get("search_panel_open", True)
     if st.button("Hide searches" if panel_open else "☰ Show searches", key="toggle_search_panel"):
         st.session_state["search_panel_open"] = not panel_open
@@ -2809,7 +2859,7 @@ def render_browser_app() -> None:
     summaries = _search_catalog(searches)
     choice = _render_search_panel(summaries)
     if choice == "＋ New Search":
-        _new_search_form()
+        _new_search_form([item["name"] for item in summaries])
         return
     summary = next((item for item in summaries if item.get("name") == choice), {})
     archived = _summary_is_archived(summary)

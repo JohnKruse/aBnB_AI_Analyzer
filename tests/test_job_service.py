@@ -268,12 +268,13 @@ def test_automatic_job_retries_discovery_and_evaluates_successful_subset(tmp_pat
             raise requests.HTTPError(response=response)
         return {'status': 'success', 'discovered': 2}
     def collect(*args, **kwargs):
-        assert kwargs['request_policy'] is not None
+        assert kwargs['request_policy'].retry_budget_seconds == 300
+        kwargs['request_policy'].retry_waited_seconds = 300
         calls.append('collect')
         return {'status': 'partial', 'completed': 1, 'total': 2, 'failed_room_ids': ['bad']}
     def evaluate(*args, **kwargs):
         assert kwargs['eligible_room_ids'] == ['good']
-        assert kwargs['request_policy'] is not None
+        assert kwargs['request_policy'].retry_waited_seconds == 0
         calls.append('evaluate')
         return {'status': 'success', 'rated': 1, 'eligible': 1}
     monkeypatch.setattr(job_service, 'discover_listings', discover)
@@ -349,7 +350,7 @@ def test_collection_resume_only_retries_transient_and_untouched(monkeypatch):
     result = job_service._resume_collection(initial, collect, policy,
                                           lambda result, state: checkpoints.append((result.copy(), state)))
     assert calls == [['temporary', 'untouched']]
-    assert waits == [300]
+    assert waits == [30]
     assert result['total'] == 4 and result['completed'] == 3
     assert result['status'] == 'partial'
     assert result['failed_room_ids'] == ['permanent']
@@ -375,7 +376,7 @@ def test_collection_resume_is_bounded_and_recovers(monkeypatch):
         result = job_service._resume_collection(failure, collect, policy, lambda *args: None)
         assert len(calls) == (1 if succeeds else 2)
         assert result['status'] == ('success' if succeeds else 'failed')
-        assert result['retry_waited_seconds'] == (300 if succeeds else 900)
+        assert result['retry_waited_seconds'] == (30 if succeeds else 90)
 
 
 def test_collection_resume_honors_budget_quota_and_cancellation(monkeypatch):

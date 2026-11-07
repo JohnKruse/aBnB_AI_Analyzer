@@ -43,7 +43,7 @@ The configured model must be available to your API account.
 
 | Step | Actions |
 |---|---|
-| **1. Search area and listings** | Set destination, dates, guests, currency and map area. Discover listings, edit the saved trip, or use **Refresh listings + prices**. |
+| **1. Search area and listings** | Pick a map area by panning or looking up a destination. Set dates, guests and currency, then discover listings, edit the saved trip, or use **Refresh listings + prices**. |
 | **2. Budget and priorities** | Inspect the price histogram, set a maximum total-stay amount, and select or save a named AI priority profile. |
 | **3. Prepare selected properties** | Click **Fetch selected + evaluate**. Details, reviews and AI run automatically, with checkpoints, bounded retries and live progress. |
 | **4. Review and share** | Export an interactive property report, or open the optional in-app property browser to filter, shortlist and reorder results. |
@@ -53,9 +53,9 @@ prices without starting review collection or AI. Free cancellation and maximum
 budget are not discovery constraints: the processing budget is chosen in step 2,
 and cancellation is a results filter.
 
-The budget slider sits below the histogram and moves in increments of 50 currency
-units. Its initial value is the median usable stay price rounded upward to the
-next multiple of 50. Green bars show included properties; gray bars show excluded
+The budget range slider sits below the histogram and moves in increments of 50
+currency units. The minimum starts at zero; the maximum starts at the median
+usable stay price rounded upward to the next multiple of 50. Green bars show included properties; gray bars show excluded
 ones. Unknown prices require an explicit opt-in. Increasing the threshold later
 adds work only where reusable evidence or matching assessments are missing.
 
@@ -73,7 +73,7 @@ Open the saved search rather than creating another one:
 |---|---|
 | Update returned listings, discovery prices and histogram | **Refresh listings + prices** in step 1 |
 | Widen or narrow the properties being prepared | Change the budget in step 2, then **Fetch selected + evaluate** in step 3 |
-| Recheck selected detailed quotes without running AI | **Update collected prices → Refresh prices + availability** in step 3 |
+| Recheck selected detailed quotes without running AI | **Update collected prices → Refresh prices + availability** in step 1 |
 | Fill failed collection or AI work | Use the available retry action or resume preparation; successful matching work is reused |
 | Update the downloaded report | Generate a new HTML export in step 4 |
 
@@ -115,12 +115,11 @@ trip quotes and bounded review pages are called separately, with per-request
 pacing. An initial uncached property normally needs a listing page, a price
 request and a review page; cached evidence can reduce that work.
 
-Temporary collection errors receive up to three attempts per request. Collection
-can then resume remaining transient failures at most twice, after 5- and 10-minute
-cooldowns, or longer when required by `Retry-After`. Rate limits slow subsequent
-requests. Retry waiting has a size-dependent budget: one minute per selected
-property, with a 20-minute minimum and 60-minute maximum. Normal processing and
-ordinary pacing are separate from that waiting budget.
+Temporary collection errors receive up to three attempts per request and at most
+two resume rounds. Retry waits have a shared five-minute limit for collection.
+If a provider cooldown would exceed the remaining time, evaluation proceeds with
+listings whose details and reviews are ready. Pending listings stay visible and
+can be retried from the main preparation button.
 
 AI calls remain sequential. A temporary failure or an invalid AI answer moves the
 property to the end of the queue, with at most three total attempts per property

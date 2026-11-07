@@ -1,5 +1,5 @@
 // Viewport-sized OSM station queries; no tile key or paid listing API calls.
-function setupBnbTransit(map, stations, savedOverlay = null) {
+function setupBnbTransit(map, stations, savedOverlay, labelStyles) {
   const cacheKey = 'bnb-transit-stations-v1';
   const ttl = 7 * 86400000;
   const cooldownKey = cacheKey+'-cooldown';
@@ -7,7 +7,10 @@ function setupBnbTransit(map, stations, savedOverlay = null) {
   try { cache = JSON.parse(sessionStorage.getItem(cacheKey) || '[]').filter(x => x.at > Date.now()-ttl); } catch (_) {}
   try { blockedUntil = Number(sessionStorage.getItem(cooldownKey)) || 0; } catch (_) {}
   const style = document.createElement('style');
-  style.textContent = '.bnb-station-icon{background:transparent;border:0}.bnb-station-badge{display:block;width:26px;height:26px;line-height:22px;text-align:center;border:2px solid white;border-radius:6px;background:#1456a0;color:white;font:bold 16px/22px sans-serif;box-shadow:0 1px 5px #0008}.bnb-station-badge.metro{background:#bd202e;border-radius:50%}.bnb-station-name{display:block;background:white;color:#172b4d;border:1px solid #9aaec6;font-weight:700;box-shadow:0 1px 3px #0003}.bnb-transit-labels .bnb-station-name{display:block}.bnb-transit-status{background:#fffffff2;padding:7px 10px;border-radius:5px;max-width:260px;font:12px/1.4 sans-serif;box-shadow:0 1px 5px #0003}';
+  style.textContent = labelStyles + `
+    .bnb-station-icon{background:transparent;border:0}
+    .bnb-transit-status{background:#fffffff2;padding:7px 10px;border-radius:5px;max-width:260px;font:12px/1.4 sans-serif;box-shadow:0 1px 5px #0003}
+  `;
   document.head.appendChild(style);
   const statusControl = L.control({position:'bottomleft'});
   let status;
@@ -33,14 +36,35 @@ function setupBnbTransit(map, stations, savedOverlay = null) {
       if (seen.some(p => p.name === name && p.metro === metro && map.distance([lat,lon],p.point)<120)) continue;
       seen.push({name, metro, point:[lat,lon]});
       const title = escapeHtml(name), mode = metro ? 'Tube / Metro' : 'Train';
-      L.marker([lat,lon], {
-        icon:L.divIcon({className:'bnb-station-icon', html:`<span aria-label="${mode} station">${savedOverlay?.icons?.[metro?'metro':'rail'] || (metro?'Ⓜ':'🚆')}</span>`, iconSize:[32,32],iconAnchor:[16,16]}),
-        title:`${name} — ${mode}`, riseOnHover:true
-      }).bindTooltip(title,{permanent:true,direction:'right',offset:[18,0],className:'bnb-station-name'})
-        .bindPopup(`<b>${title}</b><br>${mode} station${tags.network?'<br>'+escapeHtml(tags.network):''}`)
-        .addTo(stations);
+      const symbol = savedOverlay?.icons?.[metro ? 'metro' : 'rail'] || (metro ? 'Ⓜ' : '🚆');
+      const marker = L.marker([lat, lon], {
+        icon: L.divIcon({
+          className: 'bnb-station-icon station-pin',
+          html: `${symbol}<span class="station-label" aria-hidden="true">${title}</span>`,
+          iconSize: [32, 32], iconAnchor: [16, 16],
+        }),
+      }).bindPopup(`<b>${title}</b><br>${mode} station${tags.network ? '<br>' + escapeHtml(tags.network) : ''}`);
+      marker.on('add', () => marker.getElement().setAttribute('aria-label', `${name} — ${mode} station`));
+      marker.addTo(stations);
     }
+    layoutLabels();
     text(`Train / Tube stations · ${seen.length} in loaded area. ${source}`);
+  }
+  function layoutLabels() {
+    if (!map.hasLayer(stations)) return;
+    const size = map.getSize(), labels = [];
+    stations.eachLayer(marker => {
+      const label = marker.getElement()?.querySelector('.station-label');
+      if (!label) return;
+      const {x, y} = map.latLngToContainerPoint(marker.getLatLng());
+      // Keep nearby edge icons in the collision check, and clear old labels offscreen.
+      if (x < -16 || x > size.x + 16 || y < -16 || y > size.y + 16) {
+        label.classList.remove('station-label-visible');
+      } else {
+        labels.push({x, y, label});
+      }
+    });
+    layoutBnbStationLabels(labels, size.x, size.y);
   }
   function bbox() {
     const b = map.getBounds();
@@ -48,7 +72,6 @@ function setupBnbTransit(map, stations, savedOverlay = null) {
   }
   const contains = (outer, inner) => outer[0]<=inner[0] && outer[1]<=inner[1] && outer[2]>=inner[2] && outer[3]>=inner[3];
   async function update() {
-    map.getContainer().classList.toggle('bnb-transit-labels',true);
     if (!map.hasLayer(stations)) { text('Train and Tube stations hidden. Enable them in the map layers menu.'); return; }
     const bounds = bbox();
     // London stations are already bundled with the project. Never let a stale
@@ -93,7 +116,7 @@ function setupBnbTransit(map, stations, savedOverlay = null) {
     } finally { busy=false; clearTimeout(timeout); }
   }
   function schedule() { clearTimeout(timer); timer=setTimeout(update,1000); }
-  map.on('moveend zoomend',schedule);
+  map.on('moveend zoomend resize', () => { layoutLabels(); schedule(); });
   map.on('overlayadd overlayremove',event=>{if(event.layer===stations) schedule();});
   map.whenReady(update);
 }

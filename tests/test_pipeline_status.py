@@ -211,10 +211,14 @@ def test_current_unknown_assessments_complete_evaluation_without_numeric_score(t
 
 def test_evaluation_job_receives_only_available_listing_ids(tmp_path, monkeypatch):
     definition, output = _setup(tmp_path, monkeypatch)
-    _write_results(output, ["available", "unavailable"], definition["trip_revision"])
+    _write_results(output, ["available", "pending", "unavailable"], definition["trip_revision"])
     _write_detail(output, "available", definition["trip_revision"])
     _write_detail(output, "unavailable", definition["trip_revision"], "unavailable", "unavailable")
     _write_review(output, "available", "")
+    snapshot = pipeline_status.get_pipeline_status("trip")
+    assert snapshot["stages"]["details"]["state"] == "partial"
+    assert snapshot["stages"]["evaluate"]["can_start"]
+    assert snapshot["pending_collection_room_ids"] == ["pending"]
     received = []
 
     def fake_evaluation(search_name, **kwargs):
@@ -308,7 +312,7 @@ def test_status_projection_and_evaluation_cache_invalidate_after_snapshot_write(
     _write_results(output, ["r1", "r2"], definition["trip_revision"])
     _write_merged(output, ["r1", "r2"], definition["trip_revision"])
     expanded = pipeline_status.get_pipeline_status("trip")
-    assert expanded["eligible_room_ids"] == ["r2"]
+    assert expanded["pending_collection_room_ids"] == ["r2"]
     assert hydration_calls[-1] == ("r1", "r2")
 
 
@@ -341,7 +345,7 @@ def test_status_csv_cache_detects_atomic_replace_with_same_size_and_mtime(tmp_pa
     os.utime(results_path, ns=(original_stat.st_atime_ns, original_stat.st_mtime_ns))
 
     status = pipeline_status.get_pipeline_status("trip")
-    assert status["eligible_room_ids"] == ["r2"]
+    assert status["pending_collection_room_ids"] == ["r2"]
     assert len(result_reads) == 2
 
 

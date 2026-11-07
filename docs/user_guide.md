@@ -5,11 +5,12 @@ Current workflow: 6 November 2026. Start with the [README](../README.md) for set
 ## Create a search
 
 1. Click **＋ New Search** in the left panel.
-2. Enter a destination and use **Find** to locate it. If lookup fails, pan the map
-   manually. Set check-in/out, guests and currency.
-3. Frame the desired area and click **Use Map Area**. Unlock it to revise the
-   boundary. Map movement alone does not contact Airbnb.
-4. Click **Discover listings**. The app saves the search and runs discovery.
+2. Pan and zoom to the desired area, or use **Find** to jump to a destination.
+3. Click **Use Map Area** to lock the boundary and get a suggested search name.
+   For a map-only search, the app looks up the center and uses coordinates as a
+   fallback. Edit the suggested name directly below the destination box.
+4. Set dates, guests and currency, then click **Discover listings** to save the
+   search and run discovery.
 
 The saved-search page has one numbered sequence. Details/reviews and AI are
 subtasks of preparation, not another competing numbered sequence.
@@ -29,24 +30,25 @@ guests and currency before interpreting differences in the result set.
 
 ## 2. Budget and priorities
 
-The histogram uses usable total-stay quotes for the saved context. Drag the slider
-below it to choose a maximum, in increments of 50. The first value is the median
-rounded upward to the next 50. Select **Process all prices** for no upper threshold.
+The histogram uses usable total-stay quotes for the saved context. Drag either
+handle of the price range slider below it to choose minimum and maximum prices
+in increments of 50. The minimum starts at zero; the maximum starts at the median
+rounded upward to the next 50. Select **Process all prices** to disable both limits.
 Properties with unknown prices are included only when explicitly selected.
 
 The selected count is a processing scope, not a display limit. A later budget
 increase can add properties without discarding work already collected.
 
-Choose a named profile under **AI evaluation priorities**, or create/save one.
-Weights run from 0 (ignored) to 5 (highest importance). Additional instructions
-provide context for the findings. The most recently created shared profile is
-used when the current search/session has no explicit profile choice. Renaming
-and saving creates a copy; saving the same name updates it.
+Check a row in **Evaluation profiles** to choose the profile to use. The table
+shows weights from 0 (ignored) to 5 (highest importance) and any additional
+instructions. The most recently created profile is selected when you have no
+existing choice. Use **Add** to create a profile or **Edit** to change the checked
+one. Editing and saving under a different name creates a copy.
 
 ## 3. Prepare selected properties
 
-**Fetch selected + evaluate** saves the threshold and priorities, collects missing
-or expired details/reviews, then evaluates the eligible selection automatically.
+**Fetch selected + evaluate** saves the price range, collects missing or expired
+details and reviews, then evaluates the eligible selection with the checked profile.
 Successful work is checkpointed and eligible cached work is reused.
 
 The status cards separate details/review coverage from AI coverage. An assessment
@@ -59,17 +61,19 @@ three attempts are allowed per property by default. A citation error such as
 “unknown source ID” means the answer was rejected, not that the property was
 removed. Valid answers for other properties remain saved.
 
-A rate limit may apply to the provider/account rather than a single listing.
-The countdown shows when the queue may continue. A terminal run explicitly says
-when no automatic retry is scheduled. Use **Refresh pipeline status** if needed;
-that button reads status and does not start another collection run.
+A rate limit may apply to the whole account. Progress refreshes automatically,
+and the countdown shows when a scheduled retry can start. Collection waits up
+to five minutes for retries, then evaluation continues with ready listings.
+Listings with missing details or reviews have an asterisk in the results. The
+main action changes to **Evaluate ready listings** or **Retry preparation** as
+needed. A retry reuses saved work.
 
 Use **Cancel active job** to request cancellation. Let the in-flight request finish.
 Restarting Streamlit stops its in-process workers; resume from checkpoints afterward.
 
 ### Update prices without AI
 
-Open **Update collected prices**, then click **Refresh prices + availability**.
+In step 1, open **Update collected prices**, then click **Refresh prices + availability**.
 This uses the saved processing selection and rechecks detailed stay quotes without
 running AI. Recent property information/reviews are reused; missing review work
 can be collected with the bounded policy. Save a selection by starting preparation

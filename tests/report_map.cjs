@@ -4,12 +4,19 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 class Element {
-  constructor() { this.children=[]; this.dataset={}; this.style={}; this.events={}; this.checked=true; }
+  constructor() {
+    this.children=[]; this.dataset={}; this.style={}; this.events={}; this.checked=true;
+    this.attributes={};
+    const classes = new Set();
+    this.classList = {contains: name => classes.has(name), toggle: (name, on) => on ? classes.add(name) : classes.delete(name)};
+  }
+  get offsetWidth() { return (this.textContent || '').length * 7 + 12; }
+  get offsetHeight() { return 21; }
   append(child) { child.parent=this; this.children.push(child); }
   replaceChildren() { this.children=[]; }
   remove() { this.parent.children=this.parent.children.filter(child=>child!==this); }
   addEventListener(name, handler) { this.events[name]=handler; }
-  setAttribute() {}
+  setAttribute(name, value) { this.attributes[name] = value; }
   querySelector() { return this.children.find(child=>child.dataset.failed); }
   getBoundingClientRect() { return {width:640,height:397}; }
 }
@@ -22,6 +29,7 @@ const context=vm.createContext({
   shown:[{room_id:'one',latitude:51.46,longitude:-0.22,name:'Putney'}],
   knownLocation:()=>true, trip:{}, state:{}, cost:()=>100, money:()=> '€100', select:()=>{}, Intl,
 });
+vm.runInContext(fs.readFileSync(path.join(__dirname,'../src/map_assets/station_labels.js'),'utf8'),context);
 const script=fs.readFileSync(path.join(__dirname,'../src/report_assets/report.js'),'utf8');
 vm.runInContext(script.slice(script.indexOf('const map ='),script.indexOf('let dragging =')),context);
 vm.runInContext('renderMap()',context);
@@ -58,6 +66,27 @@ for(const zoom of [2,8,12,13.25,18]) {
   assert.equal(elements.stations.children[1].children[0].textContent,'East Putney');
   assert.notEqual(elements.stations.children[0].innerHTML,elements.stations.children[1].innerHTML);
 }
+const visibleLabels = () => elements.stations.children
+  .filter(marker => marker.children[0].classList.contains('station-label-visible'))
+  .map(marker => marker.children[0].textContent);
+vm.runInContext(`
+  view = {...project(51.4615, -.22), z: 16, ready: true};
+  report.transit.elements = Array.from({length: 24}, (_, i) => ({
+    lat: 51.46 + .001 * Math.floor(i / 6),
+    lon: -.22 + .002 * (i % 6 - 2.5),
+    tags: {name: 'Stop ' + i, station: 'rail'},
+  }));
+  renderMap();
+`, context);
+const labels = visibleLabels();
+assert.equal(elements.stations.children.length, 24, 'Capping labels must keep every icon');
+assert.equal(labels.length, 12, 'Even spaced stations must respect the label cap');
+assert.ok(elements.stations.children.every(pin => pin.tabIndex === 0 && pin.attributes['aria-label']));
+vm.runInContext('renderMap()', context);
+assert.deepEqual(visibleLabels(), labels, 'Redrawing the same view must keep the same labels');
+vm.runInContext('view.z = 13; renderMap()', context);
+assert.equal(elements.stations.children.length, 24);
+assert.ok(visibleLabels().length < labels.length, 'Dense stations leave fewer labels in view');
 console.log('Report map tile and transit lifecycle passed');
 
 // Cancellation choices operate on embedded evidence, with no provider calls.

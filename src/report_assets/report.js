@@ -100,10 +100,10 @@ function render() {
   shown = limit > 0 ? matches.slice(0,limit) : matches;
   if (!shown.some(row=>row.room_id === state.selected)) state.selected = null;
   renderHeaders();
-  $('count').textContent = `${shown.length} shown · ${matches.length} matching · ${rows.length} in report · ${favorites.size} favorites`;
+  $('count').textContent = `${shown.length} shown · ${matches.length} matching · ${rows.length} in report · ${favorites.size} favorites${shown.some(row=>row.collection_pending) ? ' · * Details or reviews pending' : ''}`;
   $('rows').innerHTML = shown.map(row=>{
     const rid=esc(row.room_id), selected=state.selected === row.room_id;
-    return `<tr data-id="${rid}" class="${selected ? 'selected':''}"><td><input type="checkbox" data-select="${rid}" aria-label="Select ${esc(row.name || row.title || row.room_id)}" ${selected ? 'checked':''}></td><td><a href="${esc(row.airbnb_url)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${esc(row.name || row.room_id)} on Airbnb">↗</a></td><td title="${esc(row.quote_status_ui)}">${cost(row) === null ? 'Unknown / stale' : esc(money(cost(row)))}</td><td>${number(row.Airbnb_rating)?.toFixed(2) ?? '—'}</td><td>${fit(row)?.toFixed(2) ?? '—'}</td><td class="title">${esc(row.name || row.title || row.room_id)}</td><td>${esc(countText(row.bedroom_count))}</td><td>${esc(countText(row.bed_count))}</td><td>${esc(countText(row.person_capacity))}</td><td>${esc(row.accommodation_type || 'Unknown')}</td><td>${esc(row.bathroom_privacy || 'Unknown')}</td><td><button class="star" data-favorite="${rid}" aria-label="Favorite ${esc(row.name || row.room_id)}" aria-pressed="${favorites.has(row.room_id)}">${favorites.has(row.room_id) ? '★':'☆'}</button></td></tr>`;
+    return `<tr data-id="${rid}" class="${selected ? 'selected':''}"><td><input type="checkbox" data-select="${rid}" aria-label="Select ${esc(row.name || row.title || row.room_id)}" ${selected ? 'checked':''}></td><td><a href="${esc(row.airbnb_url)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${esc(row.name || row.room_id)} on Airbnb">↗</a></td><td title="${esc(row.quote_status_ui)}">${cost(row) === null ? 'Unknown / stale' : esc(money(cost(row)))}</td><td>${number(row.Airbnb_rating)?.toFixed(2) ?? '—'}</td><td>${fit(row)?.toFixed(2) ?? '—'}</td><td class="title">${esc(row.name || row.title || row.room_id)}${row.collection_pending ? ' <span title="Details or reviews pending" aria-label="Details or reviews pending">*</span>' : ''}</td><td>${esc(countText(row.bedroom_count))}</td><td>${esc(countText(row.bed_count))}</td><td>${esc(countText(row.person_capacity))}</td><td>${esc(row.accommodation_type || 'Unknown')}</td><td>${esc(row.bathroom_privacy || 'Unknown')}</td><td><button class="star" data-favorite="${rid}" aria-label="Favorite ${esc(row.name || row.room_id)}" aria-pressed="${favorites.has(row.room_id)}">${favorites.has(row.room_id) ? '★':'☆'}</button></td></tr>`;
   }).join('') || '<tr><td colspan="12" class="empty">No properties match. Adjust the filters above.</td></tr>';
   $('rows').querySelectorAll('[data-select]').forEach(el=>el.addEventListener('change',()=>select(el.checked ? el.dataset.select : null)));
   $('rows').querySelectorAll('[data-favorite]').forEach(el=>el.addEventListener('click',()=>toggleFavorite(el.dataset.favorite)));
@@ -131,6 +131,7 @@ function renderDetails() {
   $('details').innerHTML = `<div class="detail-head"><div><p class="eyebrow">SELECTED PROPERTY · ${esc(row.room_id)}</p><h2>${esc(row.name || row.title || 'Property')}</h2><p>${esc(row.accommodation_type || 'Unknown home type')} · ${esc(row.bathroom_privacy || 'Unknown bathroom')} · Cancellation: ${esc(row.cancellation_state || 'unknown')} · Discovery: ${esc(row.discovery_state === 'not_returned' ? 'Not returned in latest search (availability unconfirmed)' : 'Returned in latest search')}</p></div><a href="${esc(row.airbnb_url)}" target="_blank" rel="noopener noreferrer">Open on Airbnb ↗</a></div>
     <div class="metrics"><div class="metric"><strong>${esc(money(cost(row)))}</strong><span>FULL STAY · ${esc(row.quote_status_ui || 'unknown quote status')}</span></div><div class="metric"><strong>${number(row.Airbnb_rating)?.toFixed(2) ?? '—'}</strong><span>AIRBNB RATING</span></div><div class="metric"><strong>${fit(row)?.toFixed(2) ?? '—'}</strong><span>AI FIT / 5 · ${esc(row.personal_fit_status || 'missing')}</span></div><div class="metric"><strong>${esc(countText(row.bedroom_count))} / ${esc(countText(row.bed_count))}</strong><span>BEDROOMS / BEDS · SLEEPS ${esc(countText(row.person_capacity))}</span></div></div>
     <p class="small">Availability: ${esc(row.availability_state || 'unknown')} · Quote fetched: ${esc(dateText(row.quote_fetched_at || row.details_fetched_at))} · Quote source: ${esc(row.quote_source || 'unknown')} · Total completeness: ${esc(row.quote_total_completeness || 'unknown')}. The stay amount is the collected Airbnb quote; it does not certify the final checkout total.</p>
+    ${row.collection_pending ? '<p class="status">* Details or reviews are pending.</p>' : ''}
     ${row.personal_fit_status === 'stale' ? '<p class="status">Prior AI assessment is stale; it is excluded from the score and sort order.</p>':''}
     <div class="detail-columns"><div><h3>Description</h3><div class="prose">${esc(row.description || 'No description collected.')}</div><h3>Facilities and evidence</h3>${evidenceHtml(row)}<h3>Your notes</h3><textarea id="property-notes" class="notes" aria-label="Notes for selected property" placeholder="Your comments and questions"></textarea><p class="muted">Use Save reviewed copy to keep notes and favorites after closing this file.</p><button id="detail-favorite">${favorites.has(row.room_id) ? '★ Remove favorite':'☆ Add favorite'}</button></div>
     <div><h3>AI evaluation</h3><p class="small">Saved assessment date: ${esc(dateText(row.personal_fit_evaluated_at))}. Assessments and value findings use the collected evidence snapshot; the displayed stay quote may have been refreshed later.</p><p class="small">Profile: ${esc(row.personal_fit_profile || report.profile.name)} · Coverage: ${number(row.coverage ?? row.personal_fit_coverage) === null ? 'Unknown' : `${Math.round(Number(row.coverage ?? row.personal_fit_coverage)*100)}%`}</p>${findings}<h3>Review summary</h3><p class="small">Collection window: ${esc(row.reviews_cutoff ? `since ${row.reviews_cutoff}` : 'all recorded dates')} · Review cap: ${esc(row.reviews_limit || 'not recorded')} · Collected: ${esc(countText(row.reviews_retrieved_count))}</p><div class="prose">${esc(row.AI_review_summary || row.review_summary || 'No summary collected.')}</div><details class="evidence"><summary>Collected guest reviews</summary><div class="prose">${esc(row.reviews_text || 'No review text collected.')}</div></details>${reviews ? `<p class="small">Reviews retrieved: ${esc(reviews.reviews_retrieved_count ?? 'unknown')} · Analyzed: ${esc(reviews.reviews_analyzed_count ?? 'unknown')} · ${esc(reviews.review_date_min)} – ${esc(reviews.review_date_max)}${reviews.reviews_truncated ? ' · Review input truncated':''}${reviews.details_truncated ? ' · Listing input truncated':''}</p>`:''}</div></div>`;
@@ -198,17 +199,27 @@ function renderMap() {
   });
   // These station locations and symbols are embedded, independent of zoom,
   // filtering the listings, and the optional online background tiles.
+  const stationLabels = [];
   for (const station of report.transit?.elements || []) {
     const p=project(station.lat,station.lon), x=p.x*scale-left,y=p.y*scale-top;
-    if (x < -40 || x > size.width+40 || y < -40 || y > size.height+40) continue;
+    if (x < -16 || x > size.width+16 || y < -16 || y > size.height+16) continue;
     const metro=station.tags.station === 'subway', name=station.tags.name;
     const marker=document.createElement('div');marker.className='station-pin';
     marker.style.left=`${x}px`;marker.style.top=`${y}px`;
     marker.innerHTML=(report.transit.icons?.[metro?'metro':'rail'] || (metro?'Ⓜ':'🚆'));
-    marker.title=`${name} — ${metro?'Tube / Metro':'Train'} station`;
-    const label=document.createElement('span');label.className='station-label';label.textContent=name;marker.append(label);
+    marker.tabIndex = 0;
+    marker.setAttribute('role', 'img');
+    marker.setAttribute('aria-label', `${name} — ${metro?'Tube / Metro':'Train'} station`);
+    const label = document.createElement('span');
+    label.className = 'station-label';
+    label.setAttribute('aria-hidden', 'true');
+    label.textContent = name;
+    marker.append(label);
     $('stations').append(marker);
+    stationLabels.push({x, y, label});
   }
+  const attributionHeight = map.querySelector('.attribution')?.offsetHeight || 0;
+  layoutBnbStationLabels(stationLabels, size.width, size.height - attributionHeight);
   updateMapStatus();
 }
 function updateMapStatus() {
@@ -217,7 +228,7 @@ function updateMapStatus() {
   $('map-status').textContent=`${located} mapped · ${shown.length-located} without coordinates (still in grid). Drag to pan; + / − to zoom. ${failed ? 'Some street tiles could not load. Check your internet connection; property markers remain usable.' : 'Property and saved train / Tube markers work offline; the background needs internet.'}`;
 }
 let dragging = null;
-map.addEventListener('pointerdown',event=>{ if (event.target.closest('a,button')) return; dragging={x:event.clientX,y:event.clientY,vx:view.x,vy:view.y};map.setPointerCapture(event.pointerId); });
+map.addEventListener('pointerdown',event=>{ if (event.target.closest('a,button,.station-pin')) return; dragging={x:event.clientX,y:event.clientY,vx:view.x,vy:view.y};map.setPointerCapture(event.pointerId); });
 map.addEventListener('pointermove',event=>{ if (!dragging) return; const scale=256*2**view.z;view.x=dragging.vx-(event.clientX-dragging.x)/scale;view.y=Math.max(0,Math.min(1,dragging.vy-(event.clientY-dragging.y)/scale)); renderMap(); });
 map.addEventListener('pointerup',()=>{if(dragging){dragging=null;renderMap();}});
 map.addEventListener('pointercancel',()=>{dragging=null;renderMap();});
@@ -235,7 +246,7 @@ $('save-copy').addEventListener('click',()=>{
   const clone=document.documentElement.cloneNode(true);
   clone.querySelector('#report-data').textContent=JSON.stringify(report).replace(/</g,'\\u003c');
   // Rebuild dynamic regions on open; keep data and scripts as the portable source.
-  for(const id of ['rows','columns','tiles','markers','details'])clone.querySelector(`#${id}`).replaceChildren();
+  for(const id of ['rows','columns','tiles','stations','markers','details'])clone.querySelector(`#${id}`).replaceChildren();
   const blob=new Blob(['<!doctype html>\n',clone.outerHTML],{type:'text/html;charset=utf-8'});
   const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=`${report.search_name.replace(/[^a-zA-Z0-9_-]/g,'_')}_reviewed.html`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 });

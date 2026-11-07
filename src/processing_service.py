@@ -31,12 +31,17 @@ def load_selection(directory: Path, definition):
 
 
 def save_selection(directory: Path, definition, value):
+    minimum = float(value.get('min_total', 0))
+    if not math.isfinite(minimum) or minimum < 0:
+        raise ValueError('The minimum processing price must be a nonnegative total-stay amount.')
     maximum = value.get('max_total')
     if maximum is not None:
         maximum = float(maximum)
         if not math.isfinite(maximum) or maximum <= 0:
             raise ValueError('The processing threshold must be a positive total-stay amount.')
-    saved = {'trip_revision': definition['trip_revision'], 'max_total': maximum,
+    if maximum is not None and minimum > maximum:
+        raise ValueError('The minimum processing price cannot exceed the maximum.')
+    saved = {'trip_revision': definition['trip_revision'], 'min_total': minimum, 'max_total': maximum,
              'include_unknown': bool(value.get('include_unknown', False)),
              'updated_at': datetime.now(timezone.utc).isoformat()}
     storage.write_json(directory / 'processing_selection.json', saved)
@@ -63,7 +68,9 @@ def select_properties(frame, definition, selection):
     if selection is None:
         selected = current
     else:
-        within = valid if selection['max_total'] is None else valid & amounts.le(selection['max_total'])
+        within = valid & amounts.ge(selection.get('min_total', 0))
+        if selection['max_total'] is not None:
+            within &= amounts.le(selection['max_total'])
         if selection.get('include_unknown'):
             within |= ~valid
         selected = current[within]

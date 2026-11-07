@@ -105,3 +105,20 @@ def test_default_airbnb_pacing_covers_individual_requests(monkeypatch):
     policy.call(lambda:'page')
     policy.call(lambda:'price')
     assert waits[-1] >= 2.9
+
+
+def test_inherited_airbnb_cooldown_cannot_hold_new_collection_past_its_budget(monkeypatch):
+    from urllib.error import HTTPError
+
+    deadline = rp.time.monotonic() + 600
+    monkeypatch.setattr(rp, '_NEXT_REQUEST', {'airbnb': deadline})
+    policy = rp.RequestPolicy(rp.automatic_options())
+    policy.retry_budget_seconds = 300
+    monkeypatch.setattr(policy, 'wait', lambda *args: pytest.fail('Must not wait on an over-budget cooldown'))
+
+    with pytest.raises(HTTPError) as caught:
+        policy.call(lambda: pytest.fail('Must not call Airbnb before its cooldown ends'))
+
+    assert rp.http_status(caught.value) == 429
+    assert policy.retry_stop_reason
+    assert rp._NEXT_REQUEST['airbnb'] == deadline
